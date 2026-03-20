@@ -1,0 +1,74 @@
+import { sql } from "./index";
+
+export async function migrate() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      display_name TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS sessions (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      token TEXT UNIQUE NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS campaigns (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      color TEXT DEFAULT '#9fd494',
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS categories (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      campaign_id UUID NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+      key TEXT NOT NULL,
+      label TEXT NOT NULL,
+      icon TEXT DEFAULT 'folder',
+      sort_order INTEGER DEFAULT 0,
+      UNIQUE(campaign_id, key)
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS docs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      campaign_id UUID NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+      category_key TEXT NOT NULL,
+      title TEXT NOT NULL,
+      icon TEXT DEFAULT 'description',
+      content TEXT DEFAULT '',
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  await sql`CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_campaigns_user ON campaigns(user_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_docs_campaign ON docs(campaign_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_docs_category ON docs(campaign_id, category_key)`;
+
+  console.log("✅ Database migrated");
+}
+
+// Run directly: bun src/db/migrate.ts
+if (import.meta.main) {
+  await migrate();
+  process.exit(0);
+}

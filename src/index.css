@@ -31,8 +31,8 @@
         sans-serif;
     line-height: 1.5;
     color-scheme: dark;
-    color: #e2e3dc;
-    background-color: #111611;
+    color: #dddede;
+    background-color: #101113;
 }
 
 * {
@@ -44,4 +44,29 @@ body {
     min-width: 320px;
     min-height: 100vh;
     overflow: hidden;
+}
+
+.m3input {
+    padding: 10px 12px;
+    border: 1px solid var(--dm-outline-variant, #424940);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--dm-text, #e2e3dc);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.m3input:focus {
+    border-color: var(--dm-primary, #9fd494);
+    border-width: 2px;
+    padding: 9px 11px;
+    box-shadow: 0 0 0 2px rgba(159, 212, 148, 0.1);
+}
+
+.m3input::placeholder {
+    color: var(--dm-text-muted, #8c9386);
 }

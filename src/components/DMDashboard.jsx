@@ -18,12 +18,17 @@ import Chip from "./ui/Chip.jsx";
 import ContextMenu from "./ui/ContextMenu.jsx";
 import { renderMarkdown, highlightMatch } from "../utils/renderMarkdown.js";
 import { SRD_CATEGORIES, ICON_OPTIONS } from "../data/sampleCampaign.js";
+import { derivePalette, hexToRGB } from "../utils/colorUtils.js";
 import DiceRoller from "./DiceRoller.jsx";
 import InitTracker from "./InitTracker.jsx";
 import DocPreviewCard from "./DocPreviewCard.jsx";
 import PinnedPanel from "./PinnedPanel.jsx";
 
-function DMDashboard({ campaign, onBack, onUpdate }) {
+function DMDashboard({ campaign, onBack }) {
+  const palette = useMemo(() => derivePalette(campaign.color || "#9fd494"), [campaign.color]);
+  const rgb = useMemo(() => hexToRGB(palette.primary), [palette.primary]);
+  const rgbLight = useMemo(() => hexToRGB(palette.primaryLight), [palette.primaryLight]);
+
   const [docs, setDocs] = useState(campaign.docs);
   const [cat, setCat] = useState("locations");
   const [doc, setDoc] = useState(campaign.docs[0] || null);
@@ -70,10 +75,14 @@ function DMDashboard({ campaign, onBack, onUpdate }) {
   const [hoverPreview, setHoverPreview] = useState(null);
   const hoverTimeout = useRef(null);
 
-  // Sync docs/categories to parent
-  useEffect(() => {
-    onUpdate({ docs, categories });
-  }, [docs, categories]);
+  // Helper to persist categories to API
+  const saveCategories = (cats) => {
+    fetch(`/api/campaigns/${campaign.id}/categories`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ categories: cats }),
+    });
+  };
 
   const catItems = useMemo(
     () => docs.filter((d) => d.category === cat),
@@ -184,11 +193,11 @@ function DMDashboard({ campaign, onBack, onUpdate }) {
 
   const commitRenameCat = () => {
     if (renamingCat && renameCatValue.trim()) {
-      setCategories((cats) =>
-        cats.map((c) =>
-          c.key === renamingCat ? { ...c, label: renameCatValue.trim() } : c,
-        ),
+      const updated = categories.map((c) =>
+        c.key === renamingCat ? { ...c, label: renameCatValue.trim() } : c,
       );
+      setCategories(updated);
+      saveCategories(updated);
     }
     setRenamingCat(null);
     setRenameCatValue("");
@@ -250,12 +259,18 @@ function DMDashboard({ campaign, onBack, onUpdate }) {
     setDocs((d) => d.map((x) => (x.id === id ? { ...x, ...updates } : x)));
     if (doc?.id === id) setDoc((prev) => ({ ...prev, ...updates }));
     setPinned((p) => p.map((x) => (x.id === id ? { ...x, ...updates } : x)));
+    fetch(`/api/docs/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    });
   };
 
   const deleteDoc = (id) => {
     setDocs((d) => d.filter((x) => x.id !== id));
     setPinned((p) => p.filter((x) => x.id !== id));
     if (doc?.id === id) setDoc(null);
+    fetch(`/api/docs/${id}`, { method: "DELETE" });
   };
 
   const startRename = (item) => {
@@ -282,15 +297,20 @@ function DMDashboard({ campaign, onBack, onUpdate }) {
     setEditing(false);
   };
 
-  const addDoc = () => {
+  const addDoc = async () => {
     if (!pasteTitle.trim() || !pasteContent.trim()) return;
-    const d = {
-      id: "c-" + Date.now(),
-      title: pasteTitle.trim(),
-      category: cat,
-      icon: pasteIcon,
-      content: pasteContent,
-    };
+    const res = await fetch(`/api/campaigns/${campaign.id}/docs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: pasteTitle.trim(),
+        category: cat,
+        icon: pasteIcon,
+        content: pasteContent,
+      }),
+    });
+    if (!res.ok) return;
+    const d = await res.json();
     setDocs((x) => [...x, d]);
     setDoc(d);
     setPasteMode(false);
@@ -299,7 +319,7 @@ function DMDashboard({ campaign, onBack, onUpdate }) {
     setPasteContent("");
   };
 
-  const handleBack = () => onBack(docs, categories);
+  const handleBack = () => onBack();
 
   const handleContextMenu = (e, item) => {
     e.preventDefault();
@@ -315,8 +335,8 @@ function DMDashboard({ campaign, onBack, onUpdate }) {
         @keyframes m3pop { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         @keyframes m3slideIn { from { transform: translateX(-16px); opacity: 0; } to { transform: none; opacity: 1; } }
         @keyframes critGlow {
-          0%, 100% { text-shadow: 0 0 12px rgba(186, 240, 174, 0.3); }
-          50% { text-shadow: 0 0 28px rgba(186, 240, 174, 0.6), 0 0 60px rgba(159, 212, 148, 0.3); }
+          0%, 100% { text-shadow: 0 0 12px rgba(${rgbLight[0]}, ${rgbLight[1]}, ${rgbLight[2]}, 0.3); }
+          50% { text-shadow: 0 0 28px rgba(${rgbLight[0]}, ${rgbLight[1]}, ${rgbLight[2]}, 0.6), 0 0 60px rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.3); }
         }
         @keyframes fumbleShake {
           0%, 100% { transform: translateX(0); }
@@ -328,7 +348,7 @@ function DMDashboard({ campaign, onBack, onUpdate }) {
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body, #root { background: #111611; }
+        html, body, #root { background: ${palette.bg}; }
 
         .m3h1 { font-size: 24px; font-weight: 600; color: var(--dm-text); margin: 0 0 16px; letter-spacing: -0.02em; line-height: 1.3; }
         .m3h2 { font-size: 18px; font-weight: 600; color: var(--dm-text); margin: 28px 0 10px; letter-spacing: -0.01em; line-height: 1.3; }
@@ -338,8 +358,8 @@ function DMDashboard({ campaign, onBack, onUpdate }) {
         .m3h6 { font-size: 12px; font-weight: 600; color: var(--dm-text-muted); margin: 10px 0 4px; line-height: 1.3; text-transform: uppercase; letter-spacing: 0.04em; }
         .m3body { font-size: 14px; line-height: 1.7; color: var(--dm-text-secondary); margin: 4px 0; }
         .m3code { background: var(--dm-surface-bright); padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', 'Cascadia Code', monospace; color: var(--dm-primary); }
-        .m3link { color: var(--dm-primary); cursor: pointer; font-weight: 500; text-decoration: underline; text-decoration-color: rgba(159,212,148,0.3); text-underline-offset: 2px; transition: text-decoration-color 0.15s; }
-        .m3link:hover { text-decoration-color: var(--dm-primary); background: rgba(159,212,148,0.08); border-radius: 3px; }
+        .m3link { color: var(--dm-primary); cursor: pointer; font-weight: 500; text-decoration: underline; text-decoration-color: rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.3); text-underline-offset: 2px; transition: text-decoration-color 0.15s; }
+        .m3link:hover { text-decoration-color: var(--dm-primary); background: rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.08); border-radius: 3px; }
         .m3hr { border: none; border-top: 1px solid var(--dm-outline-variant); margin: 16px 0; }
         .m3bq { border-left: 3px solid var(--dm-primary); padding: 10px 16px; margin: 12px 0; background: var(--dm-primary-container); border-radius: 0 12px 12px 0; font-style: italic; color: var(--dm-text-secondary); font-size: 14px; line-height: 1.6; }
         .m3list { padding-left: 20px; margin: 8px 0; }
@@ -350,7 +370,7 @@ function DMDashboard({ campaign, onBack, onUpdate }) {
         .m3table td { padding: 8px 12px; border-bottom: 1px solid var(--dm-surface-bright); color: var(--dm-text-secondary); }
         .m3table tr:hover td { background: rgba(255,255,255,0.03); }
         .m3input { padding: 10px 12px; border: 1px solid var(--dm-outline-variant); border-radius: 12px; background: transparent; color: var(--dm-text); font-size: 14px; font-family: inherit; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
-        .m3input:focus { border-color: var(--dm-primary); border-width: 2px; padding: 9px 11px; box-shadow: 0 0 0 2px rgba(159, 212, 148, 0.1); }
+        .m3input:focus { border-color: var(--dm-primary); border-width: 2px; padding: 9px 11px; box-shadow: 0 0 0 2px rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.1); }
         .m3input::placeholder { color: var(--dm-text-muted); }
 
         .navitem { transition: all 0.2s cubic-bezier(0.2, 0, 0, 1); }
@@ -359,34 +379,34 @@ function DMDashboard({ campaign, onBack, onUpdate }) {
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--dm-outline-variant); border-radius: 3px; }
-        ::selection { background: rgba(159, 212, 148, 0.25); }
+        ::selection { background: rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.25); }
       `}</style>
 
       <div
         style={{
-          /* -- M3 Dark Pastel Color Tokens (olive/green tint) -- */
-          "--dm-bg": "#111611",
-          "--dm-surface": "#1e251e",
-          "--dm-surface-bright": "#2a322a",
-          "--dm-surface-brighter": "#363e35",
-          "--dm-surface-lowest": "#0d110c",
-          "--dm-text": "#e2e3dc",
-          "--dm-text-secondary": "#c2c9bb",
-          "--dm-text-muted": "#8c9386",
-          "--dm-primary": "#9fd494",
-          "--dm-primary-light": "#baf0ae",
-          "--dm-primary-dim": "#5a8a50",
-          "--dm-primary-container": "#1f3a1a",
-          "--dm-on-primary": "#0a3806",
-          "--dm-on-primary-container": "#baf0ae",
-          "--dm-secondary-container": "#3c4c38",
-          "--dm-on-secondary-container": "#d5e8cc",
-          "--dm-tertiary": "#a0cfcc",
-          "--dm-tertiary-container": "#1e4e4b",
+          /* -- M3 Dark Color Tokens — derived from campaign color -- */
+          "--dm-bg": palette.bg,
+          "--dm-surface": palette.surface,
+          "--dm-surface-bright": palette.surfaceBright,
+          "--dm-surface-brighter": palette.surfaceBrighter,
+          "--dm-surface-lowest": palette.surfaceLowest,
+          "--dm-text": palette.text,
+          "--dm-text-secondary": palette.textSecondary,
+          "--dm-text-muted": palette.textMuted,
+          "--dm-primary": palette.primary,
+          "--dm-primary-light": palette.primaryLight,
+          "--dm-primary-dim": palette.primaryDim,
+          "--dm-primary-container": palette.primaryContainer,
+          "--dm-on-primary": palette.onPrimary,
+          "--dm-on-primary-container": palette.onPrimaryContainer,
+          "--dm-secondary-container": palette.secondaryContainer,
+          "--dm-on-secondary-container": palette.onSecondaryContainer,
+          "--dm-tertiary": palette.tertiary,
+          "--dm-tertiary-container": palette.tertiaryContainer,
           "--dm-error": "#ffb4ab",
           "--dm-error-container": "#3a1510",
-          "--dm-outline": "#8c9386",
-          "--dm-outline-variant": "#424940",
+          "--dm-outline": palette.outline,
+          "--dm-outline-variant": palette.outlineVariant,
 
           fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
           height: "100vh",

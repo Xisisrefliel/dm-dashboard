@@ -3,7 +3,7 @@ import Icon from "./ui/Icon.jsx";
 import Ripple from "./ui/Ripple.jsx";
 import { CAMPAIGN_COLORS } from "../data/sampleCampaign.js";
 
-function CampaignHome({ campaigns, onSelect, onCreate }) {
+function CampaignHome({ campaigns, onSelect, onCreate, user, onLogout }) {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
@@ -66,6 +66,38 @@ function CampaignHome({ campaigns, onSelect, onCreate }) {
         >
           Your campaigns
         </p>
+        {user && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              marginTop: 16,
+            }}
+          >
+            <span
+              style={{
+                fontSize: 13,
+                color: "var(--dm-text-muted)",
+              }}
+            >
+              {user.displayName}
+            </span>
+            <Ripple
+              onClick={onLogout}
+              style={{
+                padding: "6px 16px",
+                borderRadius: 16,
+                border: "1px solid var(--dm-outline-variant)",
+                color: "var(--dm-text-secondary)",
+                fontSize: 12,
+                fontWeight: 500,
+              }}
+            >
+              Sign out
+            </Ripple>
+          </div>
+        )}
       </div>
       <div
         style={{
@@ -147,11 +179,11 @@ function CampaignHome({ campaigns, onSelect, onCreate }) {
               }}
             >
               <Icon name="description" size={14} />
-              {c.docs.length} document{c.docs.length !== 1 ? "s" : ""}
+              {c.docCount ?? 0} document{c.docCount !== 1 ? "s" : ""}
               <span style={{ margin: "0 4px" }}>{"\u00B7"}</span>
               <Icon name="category" size={14} />
-              {c.categories.length} categor
-              {c.categories.length !== 1 ? "ies" : "y"}
+              {c.categoryCount ?? 0} categor
+              {c.categoryCount !== 1 ? "ies" : "y"}
             </div>
           </Ripple>
         ))}
