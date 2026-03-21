@@ -2,13 +2,41 @@ import { useState, useEffect } from "react";
 import Icon from "./ui/Icon.jsx";
 import Ripple from "./ui/Ripple.jsx";
 
-function InitTracker() {
-  const [entries, setEntries] = useState([]);
+function loadState(campaignId) {
+  try {
+    const raw = localStorage.getItem(`dm-init-${campaignId}`);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return null;
+}
+
+function saveState(campaignId, entries, active) {
+  localStorage.setItem(`dm-init-${campaignId}`, JSON.stringify({ entries, active }));
+}
+
+function InitTracker({ campaignId, prefill, onPrefillConsumed }) {
+  const [entries, setEntries] = useState(() => loadState(campaignId)?.entries || []);
   const [name, setName] = useState("");
   const [init, setInit] = useState("");
   const [hp, setHp] = useState("");
-  const [active, setActive] = useState(-1);
+  const [active, setActive] = useState(() => loadState(campaignId)?.active ?? -1);
 
+  // Persist on every change
+  useEffect(() => {
+    saveState(campaignId, entries, active);
+  }, [campaignId, entries, active]);
+
+  // Prefill from Party panel or bestiary
+  useEffect(() => {
+    if (prefill) {
+      setName(prefill.name || "");
+      setHp(prefill.hp != null ? String(prefill.hp) : "");
+      setInit("");
+      onPrefillConsumed?.();
+    }
+  }, [prefill]);
+
+  // Legacy: bestiary "Add to Initiative" via custom event (auto-rolls for monsters)
   useEffect(() => {
     const handler = (e) => {
       const { name: mName, hp: mHp } = e.detail;

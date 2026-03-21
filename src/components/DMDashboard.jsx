@@ -37,6 +37,7 @@ function DMDashboard({ campaign, onBack }) {
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [rightTab, setRightTab] = useState("dice");
+  const [initPrefill, setInitPrefill] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
   const [pasteMode, setPasteMode] = useState(false);
@@ -214,14 +215,10 @@ function DMDashboard({ campaign, onBack }) {
     );
   const isPinnedCheck = (id) => pinned.some((x) => x.id === id);
 
-  const addToInitiative = (monster) => {
+  const addToInitiative = (creature) => {
+    setInitPrefill({ name: creature.name, hp: creature.hp });
     setRightTab("init");
     setRightOpen(true);
-    window.dispatchEvent(
-      new CustomEvent("dm-add-initiative", {
-        detail: { name: monster.name, hp: monster.hp },
-      }),
-    );
   };
 
   const selectDoc = (item) => {
@@ -1463,7 +1460,13 @@ function DMDashboard({ campaign, onBack }) {
                   />
                 )}
                 {rightTab === "dice" && <DiceRoller />}
-                {rightTab === "init" && <InitTracker />}
+                {rightTab === "init" && (
+                  <InitTracker
+                    campaignId={campaign.id}
+                    prefill={initPrefill}
+                    onPrefillConsumed={() => setInitPrefill(null)}
+                  />
+                )}
               </div>
             </div>
           )}

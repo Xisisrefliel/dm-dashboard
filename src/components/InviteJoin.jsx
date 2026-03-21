@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import classesData from "../data/srd-classes.json";
 import racesData from "../data/srd-races.json";
+import classesData from "../data/srd-classes.json";
 import Icon from "./ui/Icon.jsx";
 import Ripple from "./ui/Ripple.jsx";
+import { buildSnapshot } from "../utils/syncParty.js";
 
 const CHARACTERS_KEY = "dm-dashboard-characters";
 
@@ -12,25 +13,6 @@ function loadCharacters() {
     if (saved) return JSON.parse(saved);
   } catch {}
   return [];
-}
-
-function buildSnapshot(ch) {
-  const cd = classesData.find((c) => c.id === ch.class);
-  const stats = ch.assignedStats || ch.stats || {};
-  const hitDie = cd?.hitDie || 8;
-  const hp = hitDie + (ch.level - 1) * (Math.floor(hitDie / 2) + 1);
-  const dexMod = Math.floor(((stats.DEX || 10) - 10) / 2);
-  const ac = 10 + dexMod;
-
-  return {
-    name: ch.name,
-    race: ch.race,
-    class: ch.class,
-    level: ch.level || 1,
-    hp,
-    ac,
-    stats,
-  };
 }
 
 function InviteJoin({ token, onBack }) {

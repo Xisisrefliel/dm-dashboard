@@ -222,4 +222,27 @@ export const partyRoutes = {
       return Response.json({ ok: true });
     },
   },
+
+  // Player syncs their character data across all campaigns they've joined
+  "/api/party/sync": {
+    async POST(req: Request) {
+      const user = await getSession(req);
+      if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+      const { character } = await req.json();
+      if (!character?.localId) {
+        return Response.json({ error: "character with localId is required" }, { status: 400 });
+      }
+
+      const updated = await sql`
+        UPDATE campaign_members
+        SET character_data = ${sql.json(character)}, joined_at = NOW()
+        WHERE user_id = ${user.id}
+          AND character_data->>'localId' = ${character.localId}
+        RETURNING id
+      `;
+
+      return Response.json({ ok: true, updated: updated.length });
+    },
+  },
 };
