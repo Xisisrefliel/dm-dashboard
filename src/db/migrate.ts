@@ -25,12 +25,43 @@ export async function migrate() {
     CREATE TABLE IF NOT EXISTS campaigns (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      slug TEXT NOT NULL,
       name TEXT NOT NULL,
       description TEXT DEFAULT '',
       color TEXT DEFAULT '#9fd494',
       created_at TIMESTAMPTZ DEFAULT NOW(),
-      updated_at TIMESTAMPTZ DEFAULT NOW()
+      updated_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(user_id, slug)
     )
+  `;
+
+  // Add slug to existing campaigns tables that lack it
+  await sql`ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS slug TEXT`;
+
+  // Backfill slugs for campaigns that don't have one
+  const missing = await sql`SELECT id, user_id, name FROM campaigns WHERE slug IS NULL`;
+  for (const c of missing) {
+    const base = c.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "campaign";
+    let slug = base;
+    let i = 2;
+    while (true) {
+      const [dup] = await sql`SELECT id FROM campaigns WHERE user_id = ${c.user_id} AND slug = ${slug} AND id != ${c.id}`;
+      if (!dup) break;
+      slug = `${base}-${i++}`;
+    }
+    await sql`UPDATE campaigns SET slug = ${slug} WHERE id = ${c.id}`;
+  }
+
+  // Now safe to add the constraint
+  await sql`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'campaigns_user_id_slug_key'
+      ) THEN
+        ALTER TABLE campaigns ADD CONSTRAINT campaigns_user_id_slug_key UNIQUE (user_id, slug);
+      END IF;
+    END $$
   `;
 
   await sql`
@@ -50,12 +81,18 @@ export async function migrate() {
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       campaign_id UUID NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
       category_key TEXT NOT NULL,
+      parent_id UUID REFERENCES docs(id) ON DELETE CASCADE,
       title TEXT NOT NULL,
       icon TEXT DEFAULT 'description',
       content TEXT DEFAULT '',
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )
+  `;
+
+  // Add parent_id to existing docs tables that lack it
+  await sql`
+    ALTER TABLE docs ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES docs(id) ON DELETE CASCADE
   `;
 
   await sql`CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)`;

@@ -74,7 +74,7 @@ export default function AuthScreen({ onAuth }) {
       >
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <Icon
-            name="shield"
+            name="shield_with_house"
             size={48}
             filled
             style={{ color: "var(--dm-primary)", marginBottom: 12 }}

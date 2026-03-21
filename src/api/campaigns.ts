@@ -2,6 +2,39 @@ import { sql } from "../db";
 import { getSession } from "./auth";
 import { DEFAULT_CATEGORIES } from "../data/sampleCampaign.js";
 
+function slugify(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "") || "campaign";
+}
+
+async function uniqueSlug(userId: string, name: string): Promise<string> {
+  const base = slugify(name);
+  let slug = base;
+  let i = 2;
+  while (true) {
+    const [existing] = await sql`
+      SELECT id FROM campaigns WHERE user_id = ${userId} AND slug = ${slug}
+    `;
+    if (!existing) return slug;
+    slug = `${base}-${i++}`;
+  }
+}
+
+function formatCampaignSummary(c: any) {
+  return {
+    id: c.id,
+    slug: c.slug,
+    name: c.name,
+    description: c.description,
+    color: c.color,
+    docCount: c.doc_count,
+    categoryCount: c.category_count,
+  };
+}
+
 export const campaignRoutes = {
   "/api/campaigns": {
     async GET(req: Request) {
@@ -17,16 +50,7 @@ export const campaignRoutes = {
         ORDER BY c.updated_at DESC
       `;
 
-      return Response.json(
-        campaigns.map((c: any) => ({
-          id: c.id,
-          name: c.name,
-          description: c.description,
-          color: c.color,
-          docCount: c.doc_count,
-          categoryCount: c.category_count,
-        })),
-      );
+      return Response.json(campaigns.map(formatCampaignSummary));
     },
 
     async POST(req: Request) {
@@ -38,13 +62,15 @@ export const campaignRoutes = {
         return Response.json({ error: "Name is required" }, { status: 400 });
       }
 
+      const slug = await uniqueSlug(user.id, name.trim());
+
       let campaign: any;
       const categories: any[] = [];
 
       await sql.begin(async (tx: any) => {
         [campaign] = await tx`
-          INSERT INTO campaigns (user_id, name, description, color)
-          VALUES (${user.id}, ${name.trim()}, ${description || ""}, ${color || "#9fd494"})
+          INSERT INTO campaigns (user_id, slug, name, description, color)
+          VALUES (${user.id}, ${slug}, ${name.trim()}, ${description || ""}, ${color || "#9fd494"})
           RETURNING *
         `;
 
@@ -62,6 +88,7 @@ export const campaignRoutes = {
       return Response.json(
         {
           id: campaign.id,
+          slug: campaign.slug,
           name: campaign.name,
           description: campaign.description,
           color: campaign.color,
@@ -84,28 +111,31 @@ export const campaignRoutes = {
 
       const { id } = (req as any).params;
 
-      const [campaign] = await sql`
-        SELECT * FROM campaigns WHERE id = ${id} AND user_id = ${user.id}
-      `;
+      // Accept both UUID and slug
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-/.test(id);
+      const [campaign] = isUUID
+        ? await sql`SELECT * FROM campaigns WHERE id = ${id} AND user_id = ${user.id}`
+        : await sql`SELECT * FROM campaigns WHERE slug = ${id} AND user_id = ${user.id}`;
       if (!campaign) {
         return Response.json({ error: "Not found" }, { status: 404 });
       }
 
       const categories = await sql`
         SELECT key, label, icon FROM categories
-        WHERE campaign_id = ${id}
+        WHERE campaign_id = ${campaign.id}
         ORDER BY sort_order
       `;
 
       const docs = await sql`
-        SELECT id, category_key AS category, title, icon, content
+        SELECT id, category_key AS category, title, icon, content, parent_id
         FROM docs
-        WHERE campaign_id = ${id}
+        WHERE campaign_id = ${campaign.id}
         ORDER BY created_at
       `;
 
       return Response.json({
         id: campaign.id,
+        slug: campaign.slug,
         name: campaign.name,
         description: campaign.description,
         color: campaign.color,
@@ -120,6 +150,7 @@ export const campaignRoutes = {
           category: d.category,
           icon: d.icon,
           content: d.content,
+          parentId: d.parent_id || null,
         })),
       });
     },
@@ -146,6 +177,7 @@ export const campaignRoutes = {
 
       return Response.json({
         id: campaign.id,
+        slug: campaign.slug,
         name: campaign.name,
         description: campaign.description,
         color: campaign.color,

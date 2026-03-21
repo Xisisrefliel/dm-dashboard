@@ -16,15 +16,15 @@ export const docRoutes = {
         return Response.json({ error: "Campaign not found" }, { status: 404 });
       }
 
-      const { title, category, icon, content } = await req.json();
+      const { title, category, icon, content, parentId } = await req.json();
       if (!title?.trim()) {
         return Response.json({ error: "Title is required" }, { status: 400 });
       }
 
       const [doc] = await sql`
-        INSERT INTO docs (campaign_id, category_key, title, icon, content)
-        VALUES (${campaignId}, ${category || "locations"}, ${title.trim()}, ${icon || "description"}, ${content || ""})
-        RETURNING id, category_key AS category, title, icon, content
+        INSERT INTO docs (campaign_id, category_key, title, icon, content, parent_id)
+        VALUES (${campaignId}, ${category || "locations"}, ${title.trim()}, ${icon || "description"}, ${content || ""}, ${parentId || null})
+        RETURNING id, category_key AS category, title, icon, content, parent_id
       `;
 
       await sql`UPDATE campaigns SET updated_at = NOW() WHERE id = ${campaignId}`;
@@ -36,6 +36,7 @@ export const docRoutes = {
           category: doc.category,
           icon: doc.icon,
           content: doc.content,
+          parentId: doc.parent_id || null,
         },
         { status: 201 },
       );
@@ -59,16 +60,31 @@ export const docRoutes = {
         return Response.json({ error: "Not found" }, { status: 404 });
       }
 
-      const [doc] = await sql`
-        UPDATE docs SET
-          title = COALESCE(${updates.title ?? null}, title),
-          icon = COALESCE(${updates.icon ?? null}, icon),
-          content = COALESCE(${updates.content ?? null}, content),
-          category_key = COALESCE(${updates.category ?? null}, category_key),
-          updated_at = NOW()
-        WHERE id = ${id}
-        RETURNING id, category_key AS category, title, icon, content
-      `;
+      // Only update parent_id if explicitly provided in the payload
+      const parentIdVal = "parentId" in updates ? (updates.parentId || null) : undefined;
+
+      const [doc] = parentIdVal !== undefined
+        ? await sql`
+          UPDATE docs SET
+            title = COALESCE(${updates.title ?? null}, title),
+            icon = COALESCE(${updates.icon ?? null}, icon),
+            content = COALESCE(${updates.content ?? null}, content),
+            category_key = COALESCE(${updates.category ?? null}, category_key),
+            parent_id = ${parentIdVal},
+            updated_at = NOW()
+          WHERE id = ${id}
+          RETURNING id, category_key AS category, title, icon, content, parent_id
+        `
+        : await sql`
+          UPDATE docs SET
+            title = COALESCE(${updates.title ?? null}, title),
+            icon = COALESCE(${updates.icon ?? null}, icon),
+            content = COALESCE(${updates.content ?? null}, content),
+            category_key = COALESCE(${updates.category ?? null}, category_key),
+            updated_at = NOW()
+          WHERE id = ${id}
+          RETURNING id, category_key AS category, title, icon, content, parent_id
+        `;
 
       await sql`UPDATE campaigns SET updated_at = NOW() WHERE id = ${existing.campaign_id}`;
 
@@ -78,6 +94,7 @@ export const docRoutes = {
         category: doc.category,
         icon: doc.icon,
         content: doc.content,
+        parentId: doc.parent_id || null,
       });
     },
 

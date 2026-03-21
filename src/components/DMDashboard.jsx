@@ -39,9 +39,11 @@ function DMDashboard({ campaign, onBack }) {
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
   const [pasteMode, setPasteMode] = useState(false);
+  const [pasteParentId, setPasteParentId] = useState(null);
   const [pasteTitle, setPasteTitle] = useState("");
   const [pasteIcon, setPasteIcon] = useState("description");
   const [pasteContent, setPasteContent] = useState("");
+  const [expanded, setExpanded] = useState({});
   const searchRef = useRef(null);
 
   // SRD state
@@ -267,9 +269,20 @@ function DMDashboard({ campaign, onBack }) {
   };
 
   const deleteDoc = (id) => {
-    setDocs((d) => d.filter((x) => x.id !== id));
-    setPinned((p) => p.filter((x) => x.id !== id));
-    if (doc?.id === id) setDoc(null);
+    // Collect all descendant ids to remove
+    const toRemove = new Set([id]);
+    const findChildren = (parentId) => {
+      for (const d of docs) {
+        if (d.parentId === parentId && !toRemove.has(d.id)) {
+          toRemove.add(d.id);
+          findChildren(d.id);
+        }
+      }
+    };
+    findChildren(id);
+    setDocs((d) => d.filter((x) => !toRemove.has(x.id)));
+    setPinned((p) => p.filter((x) => !toRemove.has(x.id)));
+    if (toRemove.has(doc?.id)) setDoc(null);
     fetch(`/api/docs/${id}`, { method: "DELETE" });
   };
 
@@ -307,16 +320,33 @@ function DMDashboard({ campaign, onBack }) {
         category: cat,
         icon: pasteIcon,
         content: pasteContent,
+        parentId: pasteParentId || null,
       }),
     });
     if (!res.ok) return;
     const d = await res.json();
     setDocs((x) => [...x, d]);
     setDoc(d);
+    if (pasteParentId) {
+      setExpanded((e) => ({ ...e, [pasteParentId]: true }));
+    }
     setPasteMode(false);
+    setPasteParentId(null);
     setPasteTitle("");
     setPasteIcon("description");
     setPasteContent("");
+  };
+
+  const toggleExpanded = (id) =>
+    setExpanded((e) => ({ ...e, [id]: !e[id] }));
+
+  const getChildren = (parentId) =>
+    catItems.filter((d) => d.parentId === parentId);
+
+  const startAddChild = (parentItem) => {
+    setPasteMode(true);
+    setPasteParentId(parentItem.id);
+    setExpanded((e) => ({ ...e, [parentItem.id]: true }));
   };
 
   const handleBack = () => onBack();
@@ -698,65 +728,40 @@ function DMDashboard({ campaign, onBack }) {
                           label={c.label}
                           icon={c.icon}
                           selected={
-                            cat === c.key || ctxMenu?.catItem?.key === c.key
+                            cat === c.key || ctxMenu?.catItem?.key === c.key || (c.key === "rules" && isSRD)
                           }
                           onClick={() => {
-                            setCat(c.key);
+                            if (c.key === "rules" && (cat === "rules" || isSRD)) {
+                              // Toggle: collapse back to the previous non-SRD category or just stay
+                              setCat(isSRD ? "rules" : "locations");
+                            } else {
+                              setCat(c.key);
+                            }
                             setPasteMode(false);
                           }}
                         />
                       </div>
                     ),
                   )}
-                  {/* SRD Reference divider + chips */}
-                  <div
-                    style={{
-                      width: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      margin: "2px 0",
-                    }}
-                  >
-                    <div
-                      style={{
-                        flex: 1,
-                        height: 1,
-                        background: "var(--dm-outline-variant)",
-                      }}
-                    />
-                    <span
-                      style={{
-                        fontSize: 10,
-                        color: "var(--dm-text-muted)",
-                        fontWeight: 500,
-                        letterSpacing: 0.5,
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      Reference
-                    </span>
-                    <div
-                      style={{
-                        flex: 1,
-                        height: 1,
-                        background: "var(--dm-outline-variant)",
-                      }}
-                    />
-                  </div>
-                  {SRD_CATEGORIES.map((c) => (
-                    <Chip
-                      key={c.key}
-                      label={c.label}
-                      icon={c.icon}
-                      selected={cat === c.key}
-                      onClick={() => {
-                        setCat(c.key);
-                        setDoc(null);
-                        setPasteMode(false);
-                      }}
-                    />
-                  ))}
+                  {/* SRD sub-categories — shown when Rules & Spells (or any SRD cat) is active */}
+                  {(cat === "rules" || isSRD) && (
+                    <>
+                      <div style={{ width: "100%", height: 2 }} />
+                      {SRD_CATEGORIES.map((c) => (
+                        <Chip
+                          key={c.key}
+                          label={c.label}
+                          icon={c.icon}
+                          selected={cat === c.key}
+                          onClick={() => {
+                            setCat(c.key);
+                            setDoc(null);
+                            setPasteMode(false);
+                          }}
+                        />
+                      ))}
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -807,82 +812,120 @@ function DMDashboard({ campaign, onBack }) {
                 )}
                 {!isSRD && (
                   <>
-                    {catItems.map((item, i) => (
-                      <Ripple
-                        key={item.id}
-                        onClick={() => {
-                          if (renamingId !== item.id) {
-                            setDoc(item);
-                            setPasteMode(false);
-                            setEditing(false);
-                          }
-                        }}
-                        onContextMenu={(e) => handleContextMenu(e, item)}
-                        className="navitem"
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 12,
-                          padding: "12px 16px",
-                          borderRadius: 28,
-                          marginBottom: 2,
-                          background:
-                            doc?.id === item.id || ctxMenu?.item?.id === item.id
-                              ? "var(--dm-secondary-container)"
-                              : "transparent",
-                          color:
-                            doc?.id === item.id || ctxMenu?.item?.id === item.id
-                              ? "var(--dm-on-secondary-container)"
-                              : "var(--dm-text-secondary)",
-                          animation: `m3slideIn 0.25s cubic-bezier(0.2,0,0,1) ${i * 0.04}s both`,
-                        }}
-                      >
-                        <Icon
-                          name={item.icon}
-                          size={20}
-                          filled={
-                            doc?.id === item.id || ctxMenu?.item?.id === item.id
-                          }
-                        />
-                        {renamingId === item.id ? (
-                          <input
-                            ref={renameRef}
-                            value={renameValue}
-                            onChange={(e) => setRenameValue(e.target.value)}
-                            onBlur={commitRename}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") commitRename();
-                              if (e.key === "Escape") {
-                                setRenamingId(null);
-                              }
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="m3input"
-                            style={{
-                              flex: 1,
-                              fontSize: 14,
-                              padding: "4px 8px",
-                              minWidth: 0,
-                            }}
-                          />
-                        ) : (
-                          <span
-                            style={{
-                              fontSize: 14,
-                              fontWeight: doc?.id === item.id ? 600 : 400,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {item.title}
-                          </span>
-                        )}
-                      </Ripple>
-                    ))}
+                    {(() => {
+                      const renderItem = (item, depth = 0) => {
+                        const children = getChildren(item.id);
+                        const hasChildren = children.length > 0;
+                        const isExpanded = expanded[item.id];
+                        const isActive = doc?.id === item.id || ctxMenu?.item?.id === item.id;
+                        return (
+                          <div key={item.id}>
+                            <Ripple
+                              onClick={() => {
+                                if (renamingId !== item.id) {
+                                  setDoc(item);
+                                  setPasteMode(false);
+                                  setEditing(false);
+                                }
+                              }}
+                              onContextMenu={(e) => handleContextMenu(e, item)}
+                              className="navitem"
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                                padding: `10px 16px 10px ${16 + depth * 20}px`,
+                                borderRadius: 28,
+                                marginBottom: 2,
+                                background: isActive
+                                  ? "var(--dm-secondary-container)"
+                                  : "transparent",
+                                color: isActive
+                                  ? "var(--dm-on-secondary-container)"
+                                  : "var(--dm-text-secondary)",
+                              }}
+                            >
+                              {hasChildren && (
+                                <span
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleExpanded(item.id);
+                                  }}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: 24,
+                                    height: 24,
+                                    borderRadius: 12,
+                                    flexShrink: 0,
+                                    cursor: "pointer",
+                                    transition: "background 0.15s",
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--dm-surface-bright)"}
+                                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                                >
+                                  <Icon
+                                    name={isExpanded ? "expand_more" : "chevron_right"}
+                                    size={18}
+                                    style={{ opacity: 0.5 }}
+                                  />
+                                </span>
+                              )}
+                              {!hasChildren && depth > 0 && (
+                                <span style={{ width: 24, flexShrink: 0 }} />
+                              )}
+                              <Icon
+                                name={item.icon}
+                                size={20}
+                                filled={isActive}
+                                style={{ flexShrink: 0 }}
+                              />
+                              {renamingId === item.id ? (
+                                <input
+                                  ref={renameRef}
+                                  value={renameValue}
+                                  onChange={(e) => setRenameValue(e.target.value)}
+                                  onBlur={commitRename}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") commitRename();
+                                    if (e.key === "Escape") setRenamingId(null);
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="m3input"
+                                  style={{
+                                    flex: 1,
+                                    fontSize: 14,
+                                    padding: "4px 8px",
+                                    minWidth: 0,
+                                  }}
+                                />
+                              ) : (
+                                <span
+                                  style={{
+                                    fontSize: 14,
+                                    fontWeight: isActive ? 600 : 400,
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {item.title}
+                                </span>
+                              )}
+                            </Ripple>
+                            {hasChildren && isExpanded && children.map((child) => renderItem(child, depth + 1))}
+                          </div>
+                        );
+                      };
+                      // Render top-level items (no parentId)
+                      return catItems
+                        .filter((d) => !d.parentId)
+                        .map((item) => renderItem(item, 0));
+                    })()}
 
                     <Ripple
-                      onClick={() => setPasteMode(true)}
+                      onClick={() => { setPasteMode(true); setPasteParentId(null); }}
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -899,20 +942,21 @@ function DMDashboard({ campaign, onBack }) {
                   </>
                 )}
               </div>
-              {isSRD && (
-                <div
-                  style={{
-                    padding: "8px 16px",
-                    fontSize: 10,
-                    color: "var(--dm-text-muted)",
-                    borderTop: "1px solid var(--dm-outline-variant)",
-                    lineHeight: 1.4,
-                  }}
-                >
-                  5e SRD content &copy; Wizards of the Coast, CC-BY-4.0
-                </div>
-              )}
             </div>
+            {isSRD && (
+              <div
+                style={{
+                  padding: "8px 16px",
+                  fontSize: 10,
+                  color: "var(--dm-text-muted)",
+                  borderTop: "1px solid var(--dm-outline-variant)",
+                  lineHeight: 1.4,
+                  flexShrink: 0,
+                }}
+              >
+                5e SRD content &copy; Wizards of the Coast, CC-BY-4.0
+              </div>
+            )}
           </div>
 
           {/* ====== MAIN CONTENT (elevated card) ====== */}
@@ -989,7 +1033,7 @@ function DMDashboard({ campaign, onBack }) {
                         color: "var(--dm-primary)",
                       }}
                     />
-                    Add New Document
+                    {pasteParentId ? `Add Sub-document to "${docs.find((d) => d.id === pasteParentId)?.title}"` : "Add New Document"}
                   </h2>
                   <div
                     style={{
@@ -1091,7 +1135,7 @@ function DMDashboard({ campaign, onBack }) {
                         Add to {categories.find((c) => c.key === cat)?.label}
                       </Ripple>
                       <Ripple
-                        onClick={() => setPasteMode(false)}
+                        onClick={() => { setPasteMode(false); setPasteParentId(null); }}
                         style={{
                           padding: "10px 24px",
                           borderRadius: 20,
@@ -1489,6 +1533,11 @@ function DMDashboard({ campaign, onBack }) {
                       icon: "push_pin",
                       label: isPinnedCheck(ctxMenu.item.id) ? "Unpin" : "Pin",
                       action: () => togglePin(ctxMenu.item),
+                    },
+                    {
+                      icon: "subdirectory_arrow_right",
+                      label: "Add sub-document",
+                      action: () => startAddChild(ctxMenu.item),
                     },
                     { divider: true },
                     {

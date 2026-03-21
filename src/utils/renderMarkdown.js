@@ -1,3 +1,32 @@
+const CALLOUT_STYLES = {
+  note:     { color: "#7cacf0", bg: "rgba(124,172,240,0.08)", icon: "&#x1F4DD;" },
+  info:     { color: "#7cacf0", bg: "rgba(124,172,240,0.08)", icon: "&#x2139;&#xFE0F;" },
+  tip:      { color: "#6ecf9a", bg: "rgba(110,207,154,0.08)", icon: "&#x1F4A1;" },
+  hint:     { color: "#6ecf9a", bg: "rgba(110,207,154,0.08)", icon: "&#x1F4A1;" },
+  important:{ color: "#c49de8", bg: "rgba(196,157,232,0.08)", icon: "&#x2755;" },
+  success:  { color: "#6ecf9a", bg: "rgba(110,207,154,0.08)", icon: "&#x2705;" },
+  check:    { color: "#6ecf9a", bg: "rgba(110,207,154,0.08)", icon: "&#x2705;" },
+  done:     { color: "#6ecf9a", bg: "rgba(110,207,154,0.08)", icon: "&#x2705;" },
+  question: { color: "#e0c46c", bg: "rgba(224,196,108,0.08)", icon: "&#x2753;" },
+  help:     { color: "#e0c46c", bg: "rgba(224,196,108,0.08)", icon: "&#x2753;" },
+  faq:      { color: "#e0c46c", bg: "rgba(224,196,108,0.08)", icon: "&#x2753;" },
+  warning:  { color: "#e8a84c", bg: "rgba(232,168,76,0.08)",  icon: "&#x26A0;&#xFE0F;" },
+  caution:  { color: "#e8a84c", bg: "rgba(232,168,76,0.08)",  icon: "&#x26A0;&#xFE0F;" },
+  attention:{ color: "#e8a84c", bg: "rgba(232,168,76,0.08)",  icon: "&#x26A0;&#xFE0F;" },
+  danger:   { color: "#e07070", bg: "rgba(224,112,112,0.08)", icon: "&#x26D4;" },
+  error:    { color: "#e07070", bg: "rgba(224,112,112,0.08)", icon: "&#x26D4;" },
+  failure:  { color: "#e07070", bg: "rgba(224,112,112,0.08)", icon: "&#x274C;" },
+  fail:     { color: "#e07070", bg: "rgba(224,112,112,0.08)", icon: "&#x274C;" },
+  bug:      { color: "#e07070", bg: "rgba(224,112,112,0.08)", icon: "&#x1F41B;" },
+  example:  { color: "#c49de8", bg: "rgba(196,157,232,0.08)", icon: "&#x1F4CB;" },
+  quote:    { color: "#9a9a9a", bg: "rgba(154,154,154,0.06)", icon: "&#x275D;" },
+  cite:     { color: "#9a9a9a", bg: "rgba(154,154,154,0.06)", icon: "&#x275D;" },
+  abstract: { color: "#7cacf0", bg: "rgba(124,172,240,0.08)", icon: "&#x1F4C4;" },
+  summary:  { color: "#7cacf0", bg: "rgba(124,172,240,0.08)", icon: "&#x1F4C4;" },
+  todo:     { color: "#7cacf0", bg: "rgba(124,172,240,0.08)", icon: "&#x2611;&#xFE0F;" },
+  _default: { color: "#9a9a9a", bg: "rgba(154,154,154,0.06)", icon: "&#x1F4AC;" },
+};
+
 export function highlightMatch(text, query) {
   if (!query) return text;
   const idx = text.toLowerCase().indexOf(query.toLowerCase());
@@ -26,6 +55,7 @@ export function renderMarkdown(md, docTitles = []) {
   let html = "";
   let inTable = false,
     inBq = false,
+    inCallout = false,
     inList = false;
 
   // Sort titles longest-first to avoid partial matches
@@ -89,13 +119,34 @@ export function renderMarkdown(md, docTitles = []) {
       inTable = false;
     }
 
-    if (line.startsWith("> ")) {
-      if (!inBq) {
+    if (line.startsWith("> ") || line === ">") {
+      const content = line === ">" ? "" : line.slice(2);
+      if (!inBq && !inCallout) {
+        // Check for Obsidian callout syntax: > [!type] optional title
+        const calloutMatch = content.match(/^\[!(\w+)\]\s*(.*)?$/);
+        if (calloutMatch) {
+          const cType = calloutMatch[1].toLowerCase();
+          const cTitle = calloutMatch[2] || cType.charAt(0).toUpperCase() + cType.slice(1);
+          const cfg = CALLOUT_STYLES[cType] || CALLOUT_STYLES._default;
+          html += `<div class="m3callout" style="border-left:3px solid ${cfg.color};background:${cfg.bg};border-radius:0 12px 12px 0;margin:12px 0;padding:12px 16px;">`;
+          html += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-weight:600;font-size:14px;color:${cfg.color};">${cfg.icon} ${fmt(cTitle)}</div>`;
+          inCallout = true;
+          continue;
+        }
         html += '<blockquote class="m3bq">';
         inBq = true;
       }
-      html += fmt(line.slice(2)) + "<br/>";
+      if (content.match(/^---+$/)) {
+        html += '<hr class="m3hr" style="margin:8px 0;"/>';
+      } else if (content === "") {
+        html += '<div style="height:6px"></div>';
+      } else {
+        html += `<p class="m3body" style="margin:2px 0;">${fmt(content)}</p>`;
+      }
       continue;
+    } else if (inCallout) {
+      html += "</div>";
+      inCallout = false;
     } else if (inBq) {
       html += "</blockquote>";
       inBq = false;
@@ -133,6 +184,7 @@ export function renderMarkdown(md, docTitles = []) {
     else html += `<p class="m3body">${fmt(line)}</p>`;
   }
   if (inTable) html += "</table>";
+  if (inCallout) html += "</div>";
   if (inBq) html += "</blockquote>";
   if (inList) html += "</ul>";
   return html;

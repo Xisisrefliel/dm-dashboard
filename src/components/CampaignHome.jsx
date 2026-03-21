@@ -3,7 +3,7 @@ import Icon from "./ui/Icon.jsx";
 import Ripple from "./ui/Ripple.jsx";
 import { CAMPAIGN_COLORS } from "../data/sampleCampaign.js";
 
-function CampaignHome({ campaigns, onSelect, onCreate, user, onLogout }) {
+function CampaignHome({ campaigns, onSelect, onCreate, user, onLogout, onCharacterCreator }) {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
@@ -46,7 +46,7 @@ function CampaignHome({ campaigns, onSelect, onCreate, user, onLogout }) {
     >
       <div style={{ textAlign: "center", paddingTop: 80, marginBottom: 48 }}>
         <Icon
-          name="shield"
+          name="shield_with_house"
           size={56}
           filled
           style={{ color: "var(--dm-primary)", marginBottom: 16 }}
@@ -71,6 +71,7 @@ function CampaignHome({ campaigns, onSelect, onCreate, user, onLogout }) {
             style={{
               display: "flex",
               alignItems: "center",
+              justifyContent: "center",
               gap: 12,
               marginTop: 16,
             }}
@@ -98,6 +99,26 @@ function CampaignHome({ campaigns, onSelect, onCreate, user, onLogout }) {
             </Ripple>
           </div>
         )}
+        <div style={{ marginTop: 20 }}>
+          <Ripple
+            onClick={onCharacterCreator}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "10px 24px",
+              borderRadius: 20,
+              background: "var(--dm-surface)",
+              border: "1px solid var(--dm-outline-variant)",
+              color: "var(--dm-text-secondary)",
+              fontSize: 14,
+              fontWeight: 500,
+            }}
+          >
+            <Icon name="person_add" size={20} />
+            Character Creator
+          </Ripple>
+        </div>
       </div>
       <div
         style={{
@@ -112,7 +133,7 @@ function CampaignHome({ campaigns, onSelect, onCreate, user, onLogout }) {
         {campaigns.map((c) => (
           <Ripple
             key={c.id}
-            onClick={() => onSelect(c.id)}
+            onClick={() => onSelect(c.id, c.slug)}
             style={{
               background: "var(--dm-surface)",
               borderRadius: 20,
@@ -136,7 +157,7 @@ function CampaignHome({ campaigns, onSelect, onCreate, user, onLogout }) {
                 }}
               >
                 <Icon
-                  name="shield"
+                  name="shield_with_house"
                   size={24}
                   filled
                   style={{ color: c.color }}
