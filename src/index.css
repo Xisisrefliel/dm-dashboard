@@ -147,22 +147,28 @@ body {
 
 @keyframes detailCardIn {
     from {
-        opacity: 0;
         transform: scale(0.96) translateY(8px);
     }
     to {
-        opacity: 1;
         transform: scale(1) translateY(0);
     }
 }
 
 @keyframes detailCardOut {
     from {
-        opacity: 1;
         transform: scale(1) translateY(0);
     }
     to {
-        opacity: 0;
         transform: scale(0.96) translateY(8px);
     }
+}
+
+@keyframes detailContentIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes detailContentOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
 }

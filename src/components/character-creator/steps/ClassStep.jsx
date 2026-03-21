@@ -56,12 +56,16 @@ export default function ClassStep({ char, update, next, prev, haptic, previewCla
 
         {/* Detail card */}
         <div key={previewClass} style={{
-          display: "flex", gap: 0, background: "rgba(28, 28, 31, 0.7)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderRadius: 20,
-          overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)", marginBottom: 24,
-          animation: `${closing ? "detailCardOut" : "detailCardIn"} ${closing ? "0.25s" : "0.35s"} cubic-bezier(0.25, 0.1, 0.25, 1)`,
-          ...(closing ? { opacity: 0, transform: "scale(0.96) translateY(8px)" } : {}),
-          ...(isMobile ? { flexDirection: "column" } : { flexWrap: "wrap" }),
+          position: "relative", borderRadius: 20, overflow: "hidden",
+          border: "1px solid rgba(255,255,255,0.08)", marginBottom: 24,
+          animation: `${closing ? "detailCardOut" : "detailCardIn"} ${closing ? "0.25s" : "0.35s"} cubic-bezier(0.25, 0.1, 0.25, 1) forwards`,
         }}>
+          <div style={{ position: "absolute", inset: 0, background: "rgba(28, 28, 31, 0.7)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }} />
+          <div style={{
+            position: "relative", display: "flex", gap: 0,
+            animation: `${closing ? "detailContentOut" : "detailContentIn"} ${closing ? "0.25s" : "0.35s"} cubic-bezier(0.25, 0.1, 0.25, 1) forwards`,
+            ...(isMobile ? { flexDirection: "column" } : { flexWrap: "wrap" }),
+          }}>
           {/* Image */}
           {pImg && (
             <div style={isMobile
@@ -149,6 +153,7 @@ export default function ClassStep({ char, update, next, prev, haptic, previewCla
                 <Icon name="check" size={16} /> Confirm {pCls.name}
               </Ripple>
             </div>
+          </div>
           </div>
         </div>
 

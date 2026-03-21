@@ -36,12 +36,18 @@ export default function RaceStep({ char, update, next, prev, haptic, previewRace
 
         {/* Detail card */}
         <div key={previewRace} style={{
-          display: "flex", gap: 0, background: "rgba(28, 28, 31, 0.7)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderRadius: 20,
-          overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)", marginBottom: 24,
-          animation: `${closing ? "detailCardOut" : "detailCardIn"} ${closing ? "0.25s" : "0.35s"} cubic-bezier(0.25, 0.1, 0.25, 1)`,
-          ...(closing ? { opacity: 0, transform: "scale(0.96) translateY(8px)" } : {}),
-          ...(isMobile ? { flexDirection: "column" } : { height: 420 }),
+          position: "relative", borderRadius: 20, overflow: "hidden",
+          border: "1px solid rgba(255,255,255,0.08)", marginBottom: 24,
+          animation: `${closing ? "detailCardOut" : "detailCardIn"} ${closing ? "0.25s" : "0.35s"} cubic-bezier(0.25, 0.1, 0.25, 1) forwards`,
+          ...(isMobile ? {} : { height: 420 }),
         }}>
+          {/* Blur backdrop — separate from content so blur is visible during animation */}
+          <div style={{ position: "absolute", inset: 0, background: "rgba(28, 28, 31, 0.7)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }} />
+          <div style={{
+            position: "relative", display: "flex", gap: 0, height: "100%",
+            animation: `${closing ? "detailContentOut" : "detailContentIn"} ${closing ? "0.25s" : "0.35s"} cubic-bezier(0.25, 0.1, 0.25, 1) forwards`,
+            ...(isMobile ? { flexDirection: "column" } : {}),
+          }}>
           {pRaceImg && (
             <div style={isMobile
               ? { width: "100%", height: 200, flexShrink: 0, position: "relative" }
@@ -100,6 +106,7 @@ export default function RaceStep({ char, update, next, prev, haptic, previewRace
                 <Icon name="check" size={16} /> Confirm {pRace.name}
               </Ripple>
             </div>
+          </div>
           </div>
         </div>
 
