@@ -125,22 +125,18 @@ body {
 
 @keyframes stepSlideLeft {
     from {
-        opacity: 0;
         transform: translateX(40px);
     }
     to {
-        opacity: 1;
         transform: translateX(0);
     }
 }
 
 @keyframes stepSlideRight {
     from {
-        opacity: 0;
         transform: translateX(-40px);
     }
     to {
-        opacity: 1;
         transform: translateX(0);
     }
 }
