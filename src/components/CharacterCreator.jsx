@@ -382,33 +382,81 @@ const CLASS_ICONS = {
 };
 
 function useTooltipPos(ref, tooltipWidth = 280) {
-  const [pos, setPos] = useState({ x: 0, y: 0, flipped: false });
+  const tooltipRef = useRef(null);
+  const [style, setStyle] = useState({ position: "fixed", visibility: "hidden", top: 0, left: 0 });
+
   const calcPos = () => {
     if (!ref.current) return;
+    // First render with visibility hidden so we can measure
     const rect = ref.current.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const half = tooltipWidth / 2;
-    const clampedX = Math.max(half + 8, Math.min(cx, window.innerWidth - half - 8));
-    const spaceAbove = rect.top;
-    const flipped = spaceAbove < 200;
-    setPos({
-      x: clampedX,
-      y: flipped ? rect.bottom + 8 : rect.top - 8,
-      flipped,
+    setStyle({ position: "fixed", visibility: "hidden", top: 0, left: 0, width: tooltipWidth });
+    // Use rAF to measure after render
+    requestAnimationFrame(() => {
+      const ttEl = tooltipRef.current;
+      const ttH = ttEl ? ttEl.offsetHeight : 200;
+      const half = tooltipWidth / 2;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const visibleTop = Math.max(0, rect.top);
+      const visibleBottom = Math.min(vh, rect.bottom);
+      const cx = rect.left + rect.width / 2;
+
+      // Try above
+      if (visibleTop - 8 - ttH > 0) {
+        setStyle({
+          position: "fixed",
+          top: visibleTop - 8 - ttH,
+          left: Math.max(8, Math.min(cx - half, vw - tooltipWidth - 8)),
+          width: tooltipWidth,
+        });
+      // Try below
+      } else if (visibleBottom + 8 + ttH < vh) {
+        setStyle({
+          position: "fixed",
+          top: visibleBottom + 8,
+          left: Math.max(8, Math.min(cx - half, vw - tooltipWidth - 8)),
+          width: tooltipWidth,
+        });
+      // Try right side
+      } else if (rect.right + 8 + tooltipWidth < vw) {
+        setStyle({
+          position: "fixed",
+          top: Math.max(8, Math.min(visibleTop, vh - ttH - 8)),
+          left: rect.right + 8,
+          width: tooltipWidth,
+        });
+      // Try left side
+      } else if (rect.left - 8 - tooltipWidth > 0) {
+        setStyle({
+          position: "fixed",
+          top: Math.max(8, Math.min(visibleTop, vh - ttH - 8)),
+          left: rect.left - 8 - tooltipWidth,
+          width: tooltipWidth,
+        });
+      // Fallback: pin to top of viewport
+      } else {
+        setStyle({
+          position: "fixed",
+          top: 8,
+          left: Math.max(8, Math.min(cx - half, vw - tooltipWidth - 8)),
+          width: tooltipWidth,
+        });
+      }
     });
   };
-  return { pos, calcPos };
+
+  return { tooltipRef, style, calcPos };
 }
 
 function TraitChip({ trait }) {
   const [hovered, setHovered] = useState(false);
   const ref = useRef(null);
-  const { pos, calcPos } = useTooltipPos(ref, 260);
+  const { tooltipRef, style, calcPos } = useTooltipPos(ref, 260);
 
   return (
     <span
       ref={ref}
-      onMouseEnter={() => { calcPos(); setHovered(true); }}
+      onMouseEnter={() => { setHovered(true); calcPos(); }}
       onMouseLeave={() => setHovered(false)}
       style={{ display: "inline" }}
     >
@@ -424,19 +472,14 @@ function TraitChip({ trait }) {
       </span>
       {hovered && (
         <div
+          ref={tooltipRef}
           style={{
-            position: "fixed",
-            top: pos.y,
-            left: pos.x,
-            transform: pos.flipped ? "translate(-50%, 0)" : "translate(-50%, -100%)",
-            width: 260,
-            padding: 12,
-            borderRadius: 12,
+            ...style,
+            padding: 12, borderRadius: 12,
             background: "var(--dm-surface-brighter)",
             border: "1px solid var(--dm-outline-variant)",
             boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
-            zIndex: 100,
-            pointerEvents: "none",
+            zIndex: 100, pointerEvents: "none",
           }}
         >
           <div style={{ fontSize: 13, fontWeight: 600, color: "var(--dm-primary)", marginBottom: 4 }}>
@@ -544,12 +587,12 @@ function RaceCard({ race, selected, onSelect }) {
 function ClassCard({ cls, selected, onSelect }) {
   const [hovered, setHovered] = useState(false);
   const ref = useRef(null);
-  const { pos, calcPos } = useTooltipPos(ref, 300);
+  const { tooltipRef, style, calcPos } = useTooltipPos(ref, 300);
   const img = CLASS_IMAGES[cls.id];
   const lvl1Features = cls.features?.filter((f) => f.level === 1).map((f) => f.name) || [];
 
   return (
-    <div ref={ref} onMouseEnter={() => { calcPos(); setHovered(true); }} onMouseLeave={() => setHovered(false)} style={{ position: "relative" }}>
+    <div ref={ref} onMouseEnter={() => { setHovered(true); calcPos(); }} onMouseLeave={() => setHovered(false)} style={{ position: "relative" }}>
       <Ripple
         onClick={onSelect}
         style={{
@@ -575,10 +618,8 @@ function ClassCard({ cls, selected, onSelect }) {
         </div>
       </Ripple>
       {hovered && (
-        <div style={{
-          position: "fixed", top: pos.y, left: pos.x,
-          transform: pos.flipped ? "translate(-50%, 0)" : "translate(-50%, -100%)",
-          width: 300, padding: 14, borderRadius: 12,
+        <div ref={tooltipRef} style={{
+          ...style, padding: 14, borderRadius: 12,
           background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
           boxShadow: "0 8px 24px rgba(0,0,0,0.5)", zIndex: 100, pointerEvents: "none",
         }}>
@@ -619,10 +660,10 @@ function ClassCard({ cls, selected, onSelect }) {
 function EquipmentCard({ eq, selected, disabled, onToggle }) {
   const [hovered, setHovered] = useState(false);
   const ref = useRef(null);
-  const { pos, calcPos } = useTooltipPos(ref, 280);
+  const { tooltipRef, style, calcPos } = useTooltipPos(ref, 280);
 
   return (
-    <div ref={ref} onMouseEnter={() => { calcPos(); setHovered(true); }} onMouseLeave={() => setHovered(false)} style={{ position: "relative" }}>
+    <div ref={ref} onMouseEnter={() => { setHovered(true); calcPos(); }} onMouseLeave={() => setHovered(false)} style={{ position: "relative" }}>
       <Ripple
         onClick={onToggle}
         style={{
@@ -642,10 +683,8 @@ function EquipmentCard({ eq, selected, disabled, onToggle }) {
         {selected && <Icon name="check_circle" size={18} style={{ color: "var(--dm-primary)", marginLeft: "auto" }} />}
       </Ripple>
       {hovered && (
-        <div style={{
-          position: "fixed", top: pos.y, left: pos.x,
-          transform: pos.flipped ? "translate(-50%, 0)" : "translate(-50%, -100%)",
-          width: 280, padding: 14, borderRadius: 12,
+        <div ref={tooltipRef} style={{
+          ...style, padding: 14, borderRadius: 12,
           background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
           boxShadow: "0 8px 24px rgba(0,0,0,0.5)", zIndex: 100, pointerEvents: "none",
         }}>
