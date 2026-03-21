@@ -70,3 +70,55 @@ body {
 .m3input::placeholder {
     color: var(--dm-text-muted, #8c9386);
 }
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    * {
+        scrollbar-gutter: auto;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .mobile-hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .mobile-hide-scrollbar {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    /* Press feedback for tappable elements */
+    [data-ripple]:active {
+        transform: scale(0.97);
+        transition: transform 0.1s;
+    }
+}
+
+@keyframes m3slideUp {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+@keyframes m3fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes m3stepIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

@@ -62,6 +62,7 @@ export const docRoutes = {
 
       // Only update parent_id if explicitly provided in the payload
       const parentIdVal = "parentId" in updates ? (updates.parentId || null) : undefined;
+      const sharedVal = "shared" in updates ? !!updates.shared : undefined;
 
       const [doc] = parentIdVal !== undefined
         ? await sql`
@@ -71,9 +72,10 @@ export const docRoutes = {
             content = COALESCE(${updates.content ?? null}, content),
             category_key = COALESCE(${updates.category ?? null}, category_key),
             parent_id = ${parentIdVal},
+            shared_with_party = COALESCE(${sharedVal ?? null}, shared_with_party),
             updated_at = NOW()
           WHERE id = ${id}
-          RETURNING id, category_key AS category, title, icon, content, parent_id
+          RETURNING id, category_key AS category, title, icon, content, parent_id, shared_with_party
         `
         : await sql`
           UPDATE docs SET
@@ -81,9 +83,10 @@ export const docRoutes = {
             icon = COALESCE(${updates.icon ?? null}, icon),
             content = COALESCE(${updates.content ?? null}, content),
             category_key = COALESCE(${updates.category ?? null}, category_key),
+            shared_with_party = COALESCE(${sharedVal ?? null}, shared_with_party),
             updated_at = NOW()
           WHERE id = ${id}
-          RETURNING id, category_key AS category, title, icon, content, parent_id
+          RETURNING id, category_key AS category, title, icon, content, parent_id, shared_with_party
         `;
 
       await sql`UPDATE campaigns SET updated_at = NOW() WHERE id = ${existing.campaign_id}`;
@@ -95,6 +98,7 @@ export const docRoutes = {
         icon: doc.icon,
         content: doc.content,
         parentId: doc.parent_id || null,
+        shared: doc.shared_with_party || false,
       });
     },
 

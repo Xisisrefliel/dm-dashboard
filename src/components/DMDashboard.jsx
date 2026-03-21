@@ -26,6 +26,7 @@ import PinnedPanel from "./PinnedPanel.jsx";
 import PartyPanel from "./PartyPanel.jsx";
 
 function DMDashboard({ campaign, onBack }) {
+  const isOwner = campaign.role !== "member";
   const palette = useMemo(() => derivePalette(campaign.color || "#9fd494"), [campaign.color]);
   const rgb = useMemo(() => hexToRGB(palette.primary), [palette.primary]);
   const rgbLight = useMemo(() => hexToRGB(palette.primaryLight), [palette.primaryLight]);
@@ -282,6 +283,17 @@ function DMDashboard({ campaign, onBack }) {
     setPinned((p) => p.filter((x) => !toRemove.has(x.id)));
     if (toRemove.has(doc?.id)) setDoc(null);
     fetch(`/api/docs/${id}`, { method: "DELETE" });
+  };
+
+  const toggleShare = (item) => {
+    const newShared = !item.shared;
+    setDocs((d) => d.map((x) => x.id === item.id ? { ...x, shared: newShared } : x));
+    if (doc?.id === item.id) setDoc((d) => ({ ...d, shared: newShared }));
+    fetch(`/api/docs/${item.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ shared: newShared }),
+    });
   };
 
   const startRename = (item) => {
@@ -713,14 +725,14 @@ function DMDashboard({ campaign, onBack }) {
                     ) : (
                       <div
                         key={c.key}
-                        onContextMenu={(e) => {
+                        onContextMenu={isOwner ? (e) => {
                           e.preventDefault();
                           setCtxMenu({
                             x: e.clientX,
                             y: e.clientY,
                             catItem: c,
                           });
-                        }}
+                        } : undefined}
                       >
                         <Chip
                           label={c.label}
@@ -745,7 +757,7 @@ function DMDashboard({ campaign, onBack }) {
                   {(cat === "rules" || isSRD) && (
                     <>
                       <div style={{ width: "100%", height: 2 }} />
-                      {SRD_CATEGORIES.map((c) => (
+                      {SRD_CATEGORIES.filter((c) => isOwner || c.key !== "srd-monsters").map((c) => (
                         <Chip
                           key={c.key}
                           label={c.label}
@@ -899,6 +911,7 @@ function DMDashboard({ campaign, onBack }) {
                                   }}
                                 />
                               ) : (
+                                <>
                                 <span
                                   style={{
                                     fontSize: 14,
@@ -906,10 +919,15 @@ function DMDashboard({ campaign, onBack }) {
                                     overflow: "hidden",
                                     textOverflow: "ellipsis",
                                     whiteSpace: "nowrap",
+                                    flex: 1,
                                   }}
                                 >
                                   {item.title}
                                 </span>
+                                {isOwner && item.shared && (
+                                  <Icon name="groups" size={14} style={{ flexShrink: 0, opacity: 0.4 }} />
+                                )}
+                                </>
                               )}
                             </Ripple>
                             {hasChildren && isExpanded && children.map((child) => renderItem(child, depth + 1))}
@@ -922,6 +940,7 @@ function DMDashboard({ campaign, onBack }) {
                         .map((item) => renderItem(item, 0));
                     })()}
 
+                    {isOwner && (
                     <Ripple
                       onClick={() => { setPasteMode(true); setPasteParentId(null); }}
                       style={{
@@ -937,6 +956,7 @@ function DMDashboard({ campaign, onBack }) {
                       <Icon name="add" size={20} />
                       <span style={{ fontSize: 14 }}>Add document</span>
                     </Ripple>
+                    )}
                   </>
                 )}
               </div>
@@ -1184,6 +1204,7 @@ function DMDashboard({ campaign, onBack }) {
                       </span>
                     </div>
                     <div style={{ display: "flex", gap: 4 }}>
+                      {isOwner && (
                       <Ripple
                         onClick={editing ? saveEdit : startEdit}
                         style={{
@@ -1205,6 +1226,7 @@ function DMDashboard({ campaign, onBack }) {
                           }}
                         />
                       </Ripple>
+                      )}
                       <Ripple
                         onClick={() => togglePin(doc)}
                         style={{
@@ -1403,7 +1425,7 @@ function DMDashboard({ campaign, onBack }) {
                 }}
               >
                 {[
-                  { key: "party", label: "Party", icon: "groups" },
+                  ...(isOwner ? [{ key: "party", label: "Party", icon: "groups" }] : []),
                   { key: "pinned", label: "Pinned", icon: "push_pin" },
                   { key: "dice", label: "Dice", icon: "casino" },
                   { key: "init", label: "Initiative", icon: "swords" },
@@ -1473,7 +1495,7 @@ function DMDashboard({ campaign, onBack }) {
         </div>
 
         {/* ====== FAB ====== */}
-        {!isSRD && (
+        {!isSRD && isOwner && (
           <Ripple
             onClick={() => setPasteMode(true)}
             style={{
@@ -1524,40 +1546,54 @@ function DMDashboard({ campaign, onBack }) {
                       action: () => startRenameCat(ctxMenu.catItem),
                     },
                   ]
-                : [
-                    {
-                      icon: "edit",
-                      label: "Rename",
-                      action: () => startRename(ctxMenu.item),
-                    },
-                    {
-                      icon: "edit_note",
-                      label: "Edit content",
-                      action: () => {
-                        selectDoc(ctxMenu.item);
-                        startEdit();
-                        setEditContent(ctxMenu.item.content);
-                        setEditing(true);
+                : isOwner
+                  ? [
+                      {
+                        icon: "edit",
+                        label: "Rename",
+                        action: () => startRename(ctxMenu.item),
                       },
-                    },
-                    {
-                      icon: "push_pin",
-                      label: isPinnedCheck(ctxMenu.item.id) ? "Unpin" : "Pin",
-                      action: () => togglePin(ctxMenu.item),
-                    },
-                    {
-                      icon: "subdirectory_arrow_right",
-                      label: "Add sub-document",
-                      action: () => startAddChild(ctxMenu.item),
-                    },
-                    { divider: true },
-                    {
-                      icon: "delete",
-                      label: "Delete",
-                      danger: true,
-                      action: () => deleteDoc(ctxMenu.item.id),
-                    },
-                  ]
+                      {
+                        icon: "edit_note",
+                        label: "Edit content",
+                        action: () => {
+                          selectDoc(ctxMenu.item);
+                          startEdit();
+                          setEditContent(ctxMenu.item.content);
+                          setEditing(true);
+                        },
+                      },
+                      {
+                        icon: "push_pin",
+                        label: isPinnedCheck(ctxMenu.item.id) ? "Unpin" : "Pin",
+                        action: () => togglePin(ctxMenu.item),
+                      },
+                      {
+                        icon: "subdirectory_arrow_right",
+                        label: "Add sub-document",
+                        action: () => startAddChild(ctxMenu.item),
+                      },
+                      { divider: true },
+                      {
+                        icon: ctxMenu.item.shared ? "visibility_off" : "groups",
+                        label: ctxMenu.item.shared ? "Unshare with party" : "Share with party",
+                        action: () => toggleShare(ctxMenu.item),
+                      },
+                      { divider: true },
+                      {
+                        icon: "delete",
+                        label: "Delete",
+                        danger: true,
+                        action: () => deleteDoc(ctxMenu.item.id),
+                      },
+                    ]
+                  : [
+                      {
+                        icon: "push_pin",
+                        label: isPinnedCheck(ctxMenu.item.id) ? "Unpin" : "Pin",
+                        action: () => togglePin(ctxMenu.item),
+                      },
+                    ]
             }
           />
         )}

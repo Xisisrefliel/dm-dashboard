@@ -95,6 +95,11 @@ export async function migrate() {
     ALTER TABLE docs ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES docs(id) ON DELETE CASCADE
   `;
 
+  // Add shared_with_party flag to docs
+  await sql`
+    ALTER TABLE docs ADD COLUMN IF NOT EXISTS shared_with_party BOOLEAN DEFAULT FALSE
+  `;
+
   await sql`
     CREATE TABLE IF NOT EXISTS invite_tokens (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

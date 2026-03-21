@@ -5,6 +5,10 @@ import allSpellsData from "../data/srd-spells.json";
 import Icon from "./ui/Icon.jsx";
 import Ripple from "./ui/Ripple.jsx";
 import { syncCharacterToParty } from "../utils/syncParty.js";
+import { useIsMobile } from "../hooks/useIsMobile.js";
+
+// Mobile style merge helper: returns base on desktop, base+mobile overrides on mobile
+const ms = (isMobile, base, mobile) => isMobile ? { ...base, ...mobile } : base;
 import dragonbornImg from "../assets/races/dragonborn.jpg";
 import gnomeImg from "../assets/races/gnome.png";
 import dwarfImg from "../assets/races/dwarf.jpg";
@@ -1201,6 +1205,7 @@ const CLASS_STARTING_EQUIPMENT = {
 
 // Character list screen
 function CharacterList({ onBack, onNewCharacter, onEditCharacter }) {
+  const isMobile = useIsMobile();
   const [characters, setCharacters] = useState(() => loadCharacters());
 
   const deleteCharacter = (id) => {
@@ -1241,11 +1246,11 @@ function CharacterList({ onBack, onNewCharacter, onEditCharacter }) {
           background: "var(--dm-primary)", color: "var(--dm-on-primary)",
           fontWeight: 500, fontSize: 14,
         }}>
-          <Icon name="add" size={18} /> New Character
+          <Icon name="add" size={18} /> {!isMobile && "New Character"}
         </Ripple>
       </div>
 
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 20px" }}>
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "16px 16px" : "24px 20px" }}>
         {characters.length === 0 ? (
           <div style={{
             textAlign: "center", padding: "60px 20px",
@@ -1268,7 +1273,7 @@ function CharacterList({ onBack, onNewCharacter, onEditCharacter }) {
           </div>
         ) : (
           <div style={{
-            display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16,
+            display: "grid", gridTemplateColumns: isMobile ? "repeat(auto-fill, minmax(150px, 1fr))" : "repeat(auto-fill, minmax(280px, 1fr))", gap: isMobile ? 12 : 16,
           }}>
             {characters.map((ch) => {
               const rd = racesData.find((r) => r.id === ch.race);
@@ -1283,13 +1288,13 @@ function CharacterList({ onBack, onNewCharacter, onEditCharacter }) {
                     display: "flex", flexDirection: "column", width: "100%",
                   }}>
                     {img && (
-                      <div style={{ width: "100%", height: 160, overflow: "hidden" }}>
+                      <div style={{ width: "100%", height: isMobile ? 120 : 160, overflow: "hidden" }}>
                         <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />
                       </div>
                     )}
-                    <div style={{ padding: "14px 18px" }}>
-                      <div style={{ fontSize: 18, fontWeight: 700 }}>{ch.name || "Unnamed"}</div>
-                      <div style={{ fontSize: 13, color: "var(--dm-text-secondary)", marginTop: 2 }}>
+                    <div style={{ padding: isMobile ? "10px 14px" : "14px 18px" }}>
+                      <div style={{ fontSize: isMobile ? 15 : 18, fontWeight: 700 }}>{ch.name || "Unnamed"}</div>
+                      <div style={{ fontSize: isMobile ? 12 : 13, color: "var(--dm-text-secondary)", marginTop: 2 }}>
                         Level {ch.level} {rd?.name || ""} {cd?.name || ""}
                       </div>
                     </div>
@@ -1298,7 +1303,7 @@ function CharacterList({ onBack, onNewCharacter, onEditCharacter }) {
                     onClick={() => deleteCharacter(ch.id)}
                     style={{
                       position: "absolute", top: 8, right: 8,
-                      width: 32, height: 32, borderRadius: 16,
+                      width: isMobile ? 40 : 32, height: isMobile ? 40 : 32, borderRadius: isMobile ? 20 : 16,
                       display: "flex", alignItems: "center", justifyContent: "center",
                       background: "rgba(0,0,0,0.6)", border: "1px solid var(--dm-outline-variant)",
                     }}
@@ -1316,10 +1321,12 @@ function CharacterList({ onBack, onNewCharacter, onEditCharacter }) {
 }
 
 function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, editId }) {
-  // If list mode, show the character list
+  // If list mode, show the character list (no hooks before this early return)
   if (listMode) {
     return <CharacterList onBack={onBack} onNewCharacter={onNewCharacter} onEditCharacter={onEditCharacter} />;
   }
+
+  const isMobile = useIsMobile();
 
   // Load existing character if editing
   const editChar = useMemo(() => {
@@ -1338,6 +1345,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
   const raceCarouselRef = useRef(null);
   const [previewBg, setPreviewBg] = useState(null);
   const bgCarouselRef = useRef(null);
+  const stepBarRef = useRef(null);
 
   const update = (key, val) => setChar((c) => ({ ...c, [key]: val }));
 
@@ -1463,6 +1471,22 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
     }));
   }, [step, char, assignedStats, unassigned, finished]);
 
+  // Auto-scroll step bar to active step on mobile
+  useEffect(() => {
+    if (isMobile && stepBarRef.current) {
+      const active = stepBarRef.current.children[step];
+      if (active) active.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    }
+  }, [step, isMobile]);
+
+  // Track step direction for transition animation
+  const prevStepRef = useRef(step);
+  const [stepDir, setStepDir] = useState(0);
+  useEffect(() => {
+    setStepDir(step > prevStepRef.current ? 1 : step < prevStepRef.current ? -1 : 0);
+    prevStepRef.current = step;
+  }, [step]);
+
   const assignStat = (ability, val) => {
     const prev = assignedStats[ability];
     const newUnassigned =
@@ -1536,15 +1560,21 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
               <div style={{
                 display: "flex", gap: 0, background: "var(--dm-surface)", borderRadius: 20,
                 overflow: "hidden", border: "1px solid var(--dm-outline-variant)", marginBottom: 24,
-                height: 420,
+                ...(isMobile ? { flexDirection: "column" } : { height: 420 }),
               }}>
                 {pRaceImg && (
-                  <div style={{ width: 240, minWidth: 240, flexShrink: 0, position: "relative" }}>
+                  <div style={isMobile
+                    ? { width: "100%", height: 200, flexShrink: 0, position: "relative" }
+                    : { width: 240, minWidth: 240, flexShrink: 0, position: "relative" }
+                  }>
                     <img src={pRaceImg} alt={pRace.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />
                   </div>
                 )}
 
-                <div style={{ flex: 1, padding: "20px 28px", minWidth: 260, overflowY: "auto" }}>
+                <div style={isMobile
+                  ? { flex: 1, padding: 16, overflowY: "auto" }
+                  : { flex: 1, padding: "20px 28px", minWidth: 260, overflowY: "auto" }
+                }>
                   <h3 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 8px", letterSpacing: "0.02em", textTransform: "uppercase" }}>
                     {pRace.name}
                   </h3>
@@ -1583,10 +1613,10 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
 
                   {/* Action buttons */}
                   <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-                    <Ripple onClick={() => setPreviewRace(null)} style={{ ...styles.secondaryBtn, gap: 6 }}>
+                    <Ripple onClick={() => setPreviewRace(null)} style={{ ...styles.secondaryBtn, gap: 6, ...(isMobile ? { flex: 1, justifyContent: "center" } : {}) }}>
                       <Icon name="arrow_back" size={16} /> Back
                     </Ripple>
-                    <Ripple onClick={() => { setPreviewRace(null); next(); }} style={{ ...styles.primaryBtn, gap: 6 }}>
+                    <Ripple onClick={() => { setPreviewRace(null); next(); }} style={{ ...styles.primaryBtn, gap: 6, ...(isMobile ? { flex: 1, justifyContent: "center" } : {}) }}>
                       <Icon name="check" size={16} /> Confirm {pRace.name}
                     </Ripple>
                   </div>
@@ -1595,23 +1625,26 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
 
               {/* Mini race carousel */}
               <div style={{ position: "relative" }}>
-                <Ripple
-                  onClick={() => raceCarouselRef.current?.scrollBy({ left: -240, behavior: "smooth" })}
-                  style={{
-                    position: "absolute", left: -16, top: "50%", transform: "translateY(-50%)", zIndex: 2,
-                    width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center",
-                    background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-                  }}
-                >
-                  <Icon name="chevron_left" size={22} />
-                </Ripple>
+                {!isMobile && (
+                  <Ripple
+                    onClick={() => raceCarouselRef.current?.scrollBy({ left: -240, behavior: "smooth" })}
+                    style={{
+                      position: "absolute", left: -16, top: "50%", transform: "translateY(-50%)", zIndex: 2,
+                      width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                    }}
+                  >
+                    <Icon name="chevron_left" size={22} />
+                  </Ripple>
+                )}
                 <div
                   ref={raceCarouselRef}
                   style={{
                     display: "flex", gap: 10, overflowX: "auto", paddingBottom: 8,
                     scrollbarWidth: "none", msOverflowStyle: "none",
                     scrollSnapType: "x mandatory",
+                    WebkitOverflowScrolling: "touch",
                   }}
                 >
                   {racesData.map((race) => {
@@ -1637,17 +1670,19 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                     );
                   })}
                 </div>
-                <Ripple
-                  onClick={() => raceCarouselRef.current?.scrollBy({ left: 240, behavior: "smooth" })}
-                  style={{
-                    position: "absolute", right: -16, top: "50%", transform: "translateY(-50%)", zIndex: 2,
-                    width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center",
-                    background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-                  }}
-                >
-                  <Icon name="chevron_right" size={22} />
-                </Ripple>
+                {!isMobile && (
+                  <Ripple
+                    onClick={() => raceCarouselRef.current?.scrollBy({ left: 240, behavior: "smooth" })}
+                    style={{
+                      position: "absolute", right: -16, top: "50%", transform: "translateY(-50%)", zIndex: 2,
+                      width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                    }}
+                  >
+                    <Icon name="chevron_right" size={22} />
+                  </Ripple>
+                )}
               </div>
             </div>
           );
@@ -1661,13 +1696,14 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
               Your race determines your physical traits, abilities, and cultural
               background.
             </p>
-            <div style={styles.cardGrid}>
+            <div style={ms(isMobile, styles.cardGrid, { gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" })}>
               {racesData.map((race) => (
                 <RaceCard
                   key={race.id}
                   race={race}
                   selected={char.race === race.id}
                   onSelect={() => openRacePreview(race.id)}
+                  isMobile={isMobile}
                 />
               ))}
             </div>
@@ -1715,17 +1751,23 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
               <div style={{
                 display: "flex", gap: 0, background: "var(--dm-surface)", borderRadius: 20,
                 overflow: "hidden", border: "1px solid var(--dm-outline-variant)", marginBottom: 24,
-                flexWrap: "wrap",
+                ...(isMobile ? { flexDirection: "column" } : { flexWrap: "wrap" }),
               }}>
                 {/* Image */}
                 {pImg && (
-                  <div style={{ width: 280, minWidth: 280, flexShrink: 0 }}>
+                  <div style={isMobile
+                    ? { width: "100%", height: 200, flexShrink: 0 }
+                    : { width: 280, minWidth: 280, flexShrink: 0 }
+                  }>
                     <img src={pImg} alt={pCls.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                   </div>
                 )}
 
                 {/* Info */}
-                <div style={{ flex: 1, padding: "28px 32px", minWidth: 260 }}>
+                <div style={isMobile
+                  ? { flex: 1, padding: 16 }
+                  : { flex: 1, padding: "28px 32px", minWidth: 260 }
+                }>
                   <h3 style={{ fontSize: 28, fontWeight: 700, margin: "0 0 12px", letterSpacing: "0.02em", textTransform: "uppercase" }}>
                     {pCls.name}
                   </h3>
@@ -1761,7 +1803,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                               key={skill}
                               onClick={() => toggleSkill(skill)}
                               style={{
-                                padding: "6px 14px", borderRadius: 20, fontSize: 13, fontWeight: 500,
+                                padding: isMobile ? "10px 16px" : "6px 14px", borderRadius: 20, fontSize: 13, fontWeight: 500,
                                 background: picked ? "var(--dm-primary)" : "var(--dm-surface-bright)",
                                 color: picked ? "var(--dm-on-primary)" : disabled ? "var(--dm-text-muted)" : "var(--dm-text)",
                                 border: picked ? "1px solid var(--dm-primary)" : "1px solid var(--dm-outline-variant)",
@@ -1785,7 +1827,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
 
                   {/* Action buttons */}
                   <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
-                    <Ripple onClick={() => setPreviewClass(null)} style={{ ...styles.secondaryBtn, gap: 6 }}>
+                    <Ripple onClick={() => setPreviewClass(null)} style={{ ...styles.secondaryBtn, gap: 6, ...(isMobile ? { flex: 1, justifyContent: "center" } : {}) }}>
                       <Icon name="arrow_back" size={16} /> Back
                     </Ripple>
                     <Ripple
@@ -1794,6 +1836,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                         ...styles.primaryBtn, gap: 6,
                         opacity: selectedSkills.length >= pSkillsChoose ? 1 : 0.4,
                         cursor: selectedSkills.length >= pSkillsChoose ? "pointer" : "default",
+                        ...(isMobile ? { flex: 1, justifyContent: "center" } : {}),
                       }}
                     >
                       <Icon name="check" size={16} /> Confirm {pCls.name}
@@ -1804,23 +1847,26 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
 
               {/* Mini class carousel */}
               <div style={{ position: "relative" }}>
-                <Ripple
-                  onClick={() => classCarouselRef.current?.scrollBy({ left: -240, behavior: "smooth" })}
-                  style={{
-                    position: "absolute", left: -16, top: "50%", transform: "translateY(-50%)", zIndex: 2,
-                    width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center",
-                    background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-                  }}
-                >
-                  <Icon name="chevron_left" size={22} />
-                </Ripple>
+                {!isMobile && (
+                  <Ripple
+                    onClick={() => classCarouselRef.current?.scrollBy({ left: -240, behavior: "smooth" })}
+                    style={{
+                      position: "absolute", left: -16, top: "50%", transform: "translateY(-50%)", zIndex: 2,
+                      width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                    }}
+                  >
+                    <Icon name="chevron_left" size={22} />
+                  </Ripple>
+                )}
                 <div
                   ref={classCarouselRef}
                   style={{
                     display: "flex", gap: 10, overflowX: "auto", paddingBottom: 8,
                     scrollbarWidth: "none", msOverflowStyle: "none",
                     scrollSnapType: "x mandatory",
+                    WebkitOverflowScrolling: "touch",
                   }}
                 >
                   {classesData.map((cls) => {
@@ -1846,17 +1892,19 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                     );
                   })}
                 </div>
-                <Ripple
-                  onClick={() => classCarouselRef.current?.scrollBy({ left: 240, behavior: "smooth" })}
-                  style={{
-                    position: "absolute", right: -16, top: "50%", transform: "translateY(-50%)", zIndex: 2,
-                    width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center",
-                    background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-                  }}
-                >
-                  <Icon name="chevron_right" size={22} />
-                </Ripple>
+                {!isMobile && (
+                  <Ripple
+                    onClick={() => classCarouselRef.current?.scrollBy({ left: 240, behavior: "smooth" })}
+                    style={{
+                      position: "absolute", right: -16, top: "50%", transform: "translateY(-50%)", zIndex: 2,
+                      width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                    }}
+                  >
+                    <Icon name="chevron_right" size={22} />
+                  </Ripple>
+                )}
               </div>
             </div>
           );
@@ -1869,7 +1917,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
             <p style={styles.stepDesc}>
               Your class defines your abilities, skills, and role in the party.
             </p>
-            <div style={styles.cardGrid}>
+            <div style={ms(isMobile, styles.cardGrid, { gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" })}>
               {classesData.map((cls) => (
                 <ClassCard
                   key={cls.id}
@@ -1901,15 +1949,21 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
               <div style={{
                 display: "flex", gap: 0, background: "var(--dm-surface)", borderRadius: 20,
                 overflow: "hidden", border: "1px solid var(--dm-outline-variant)", marginBottom: 24,
-                height: 360,
+                ...(isMobile ? { flexDirection: "column" } : { height: 360 }),
               }}>
                 {pBgImg && (
-                  <div style={{ width: 240, minWidth: 240, flexShrink: 0 }}>
+                  <div style={isMobile
+                    ? { width: "100%", height: 200, flexShrink: 0 }
+                    : { width: 240, minWidth: 240, flexShrink: 0 }
+                  }>
                     <img src={pBgImg} alt={pBg.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />
                   </div>
                 )}
 
-                <div style={{ flex: 1, padding: "20px 28px", minWidth: 260, overflowY: "auto" }}>
+                <div style={isMobile
+                  ? { flex: 1, padding: 16, overflowY: "auto" }
+                  : { flex: 1, padding: "20px 28px", minWidth: 260, overflowY: "auto" }
+                }>
                   <h3 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 8px", letterSpacing: "0.02em", textTransform: "uppercase" }}>
                     {pBg.name}
                   </h3>
@@ -1926,10 +1980,10 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
 
                   {/* Action buttons */}
                   <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-                    <Ripple onClick={() => setPreviewBg(null)} style={{ ...styles.secondaryBtn, gap: 6 }}>
+                    <Ripple onClick={() => setPreviewBg(null)} style={{ ...styles.secondaryBtn, gap: 6, ...(isMobile ? { flex: 1, justifyContent: "center" } : {}) }}>
                       <Icon name="arrow_back" size={16} /> Back
                     </Ripple>
-                    <Ripple onClick={() => { setPreviewBg(null); next(); }} style={{ ...styles.primaryBtn, gap: 6 }}>
+                    <Ripple onClick={() => { setPreviewBg(null); next(); }} style={{ ...styles.primaryBtn, gap: 6, ...(isMobile ? { flex: 1, justifyContent: "center" } : {}) }}>
                       <Icon name="check" size={16} /> Confirm {pBg.name}
                     </Ripple>
                   </div>
@@ -1938,23 +1992,26 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
 
               {/* Mini background carousel */}
               <div style={{ position: "relative" }}>
-                <Ripple
-                  onClick={() => bgCarouselRef.current?.scrollBy({ left: -240, behavior: "smooth" })}
-                  style={{
-                    position: "absolute", left: -16, top: "50%", transform: "translateY(-50%)", zIndex: 2,
-                    width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center",
-                    background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-                  }}
-                >
-                  <Icon name="chevron_left" size={22} />
-                </Ripple>
+                {!isMobile && (
+                  <Ripple
+                    onClick={() => bgCarouselRef.current?.scrollBy({ left: -240, behavior: "smooth" })}
+                    style={{
+                      position: "absolute", left: -16, top: "50%", transform: "translateY(-50%)", zIndex: 2,
+                      width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                    }}
+                  >
+                    <Icon name="chevron_left" size={22} />
+                  </Ripple>
+                )}
                 <div
                   ref={bgCarouselRef}
                   style={{
                     display: "flex", gap: 10, overflowX: "auto", paddingBottom: 8,
                     scrollbarWidth: "none", msOverflowStyle: "none",
                     scrollSnapType: "x mandatory",
+                    WebkitOverflowScrolling: "touch",
                   }}
                 >
                   {BACKGROUNDS.map((bg) => {
@@ -1986,17 +2043,19 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                     );
                   })}
                 </div>
-                <Ripple
-                  onClick={() => bgCarouselRef.current?.scrollBy({ left: 240, behavior: "smooth" })}
-                  style={{
-                    position: "absolute", right: -16, top: "50%", transform: "translateY(-50%)", zIndex: 2,
-                    width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center",
-                    background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-                  }}
-                >
-                  <Icon name="chevron_right" size={22} />
-                </Ripple>
+                {!isMobile && (
+                  <Ripple
+                    onClick={() => bgCarouselRef.current?.scrollBy({ left: 240, behavior: "smooth" })}
+                    style={{
+                      position: "absolute", right: -16, top: "50%", transform: "translateY(-50%)", zIndex: 2,
+                      width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                    }}
+                  >
+                    <Icon name="chevron_right" size={22} />
+                  </Ripple>
+                )}
               </div>
             </div>
           );
@@ -2009,7 +2068,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
             <p style={styles.stepDesc}>
               Your background reveals where you came from and your place in the world.
             </p>
-            <div style={styles.cardGrid}>
+            <div style={ms(isMobile, styles.cardGrid, { gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" })}>
               {BACKGROUNDS.map((bg) => {
                 const img = BG_IMAGES[bg.id];
                 return (
@@ -2067,7 +2126,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                 <Ripple
                   onClick={() => update("level", Math.max(1, char.level - 1))}
                   style={{
-                    width: 32, height: 32, borderRadius: 10,
+                    width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, borderRadius: 10,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     background: "var(--dm-surface-bright)", border: "1px solid var(--dm-outline-variant)",
                   }}
@@ -2083,7 +2142,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                 <Ripple
                   onClick={() => update("level", Math.min(20, char.level + 1))}
                   style={{
-                    width: 32, height: 32, borderRadius: 10,
+                    width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, borderRadius: 10,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     background: "var(--dm-surface-bright)", border: "1px solid var(--dm-outline-variant)",
                   }}
@@ -2097,10 +2156,10 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
             </div>
 
             <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-              <Ripple onClick={rollStats} style={{ ...styles.secondaryBtn, gap: 6 }}>
+              <Ripple onClick={rollStats} style={{ ...styles.secondaryBtn, gap: 6, ...(isMobile ? { flex: 1, justifyContent: "center" } : {}) }}>
                 <Icon name="casino" size={18} /> Roll 4d6
               </Ripple>
-              <Ripple onClick={resetToStandard} style={{ ...styles.secondaryBtn, gap: 6 }}>
+              <Ripple onClick={resetToStandard} style={{ ...styles.secondaryBtn, gap: 6, ...(isMobile ? { flex: 1, justifyContent: "center" } : {}) }}>
                 <Icon name="restart_alt" size={18} /> Standard Array
               </Ripple>
             </div>
@@ -2135,7 +2194,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+                gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(auto-fill, minmax(150px, 1fr))",
                 gap: 12,
               }}
             >
@@ -2344,8 +2403,8 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(3, 1fr)",
-                gap: 10,
-                maxWidth: 520,
+                gap: isMobile ? 8 : 10,
+                ...(isMobile ? {} : { maxWidth: 520 }),
                 margin: "0 auto",
               }}
             >
@@ -2359,7 +2418,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                         ? al.color + "18"
                         : "var(--dm-surface)",
                     borderRadius: 16,
-                    padding: 16,
+                    padding: isMobile ? 12 : 16,
                     textAlign: "center",
                     border:
                       char.alignment === al.id
@@ -2373,7 +2432,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                     gap: 6,
                   }}
                 >
-                  <Icon name={al.icon} size={24} style={{ color: al.color }} />
+                  <Icon name={al.icon} size={isMobile ? 20 : 24} style={{ color: al.color }} />
                   <div
                     style={{
                       fontSize: 13,
@@ -2431,7 +2490,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                         </span>
                         {choiceGroup.label}
                       </div>
-                      <div style={styles.cardGrid}>
+                      <div style={ms(isMobile, styles.cardGrid, { gridTemplateColumns: "1fr" })}>
                         {choiceGroup.options.map((option) => (
                           <EquipmentCard
                             key={option.id}
@@ -2468,7 +2527,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                       <Icon name="lock" size={16} style={{ color: "var(--dm-text-muted)" }} />
                       Guaranteed Items
                     </div>
-                    <div style={styles.cardGrid}>
+                    <div style={ms(isMobile, styles.cardGrid, { gridTemplateColumns: "1fr" })}>
                       {classEquipConfig.guaranteed.map((item) => (
                         <EquipmentCard
                           key={item.id}
@@ -2537,30 +2596,62 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
           const chipRef = useRef(null);
           const { tooltipRef: ttRef, style: ttStyle, calcPos: ttCalc } = useTooltipPos(chipRef, 300);
           const [tipOpen, setTipOpen] = useState(false);
+          const [expanded, setExpanded] = useState(false);
+
+          const spellIcon = spell.school === "Evocation" ? "local_fire_department" :
+            spell.school === "Abjuration" ? "shield" :
+            spell.school === "Conjuration" ? "auto_awesome" :
+            spell.school === "Divination" ? "visibility" :
+            spell.school === "Enchantment" ? "psychology" :
+            spell.school === "Illusion" ? "blur_on" :
+            spell.school === "Necromancy" ? "skull" :
+            spell.school === "Transmutation" ? "swap_horiz" : "auto_fix_high";
+
+          const detailContent = (
+            <>
+              <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+                <span style={{ color: "var(--dm-text-muted)" }}>School: </span>{spell.school}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+                <span style={{ color: "var(--dm-text-muted)" }}>Cast Time: </span>{spell.castingTime}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+                <span style={{ color: "var(--dm-text-muted)" }}>Range: </span>{spell.range}
+              </div>
+              {spell.components && (
+                <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+                  <span style={{ color: "var(--dm-text-muted)" }}>Components: </span>
+                  {spell.components.map((c) => c === "V" ? "Verbal" : c === "S" ? "Somatic" : c === "M" ? "Material" : c).join(", ")}
+                  {spell.material && <span style={{ color: "var(--dm-text-muted)" }}> ({spell.material})</span>}
+                </div>
+              )}
+              <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+                <span style={{ color: "var(--dm-text-muted)" }}>Duration: </span>{spell.duration}{spell.concentration ? " (Concentration)" : ""}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--dm-text-secondary)", lineHeight: 1.5, marginTop: 6 }}>
+                {spell.description.length > 200 ? spell.description.slice(0, 200) + "…" : spell.description}
+              </div>
+            </>
+          );
+
           return (
-            <div ref={chipRef} onMouseEnter={() => { setTipOpen(true); ttCalc(); }} onMouseLeave={() => setTipOpen(false)} style={{ position: "relative" }}>
+            <div
+              ref={chipRef}
+              onMouseEnter={!isMobile ? () => { setTipOpen(true); ttCalc(); } : undefined}
+              onMouseLeave={!isMobile ? () => setTipOpen(false) : undefined}
+              style={{ position: "relative" }}
+            >
               <Ripple
                 onClick={onToggle}
                 style={{
-                  padding: "12px 16px", borderRadius: 12,
+                  padding: "12px 16px", borderRadius: expanded && isMobile ? "12px 12px 0 0" : 12,
                   display: "flex", gap: 12, alignItems: "center",
                   background: selected ? "var(--dm-primary-container)" : "var(--dm-surface)",
                   border: selected ? "2px solid var(--dm-primary)" : "1px solid var(--dm-outline-variant)",
                   opacity: disabled && !selected ? 0.5 : 1,
                 }}
               >
-                <Icon
-                  name={spell.school === "Evocation" ? "local_fire_department" :
-                    spell.school === "Abjuration" ? "shield" :
-                    spell.school === "Conjuration" ? "auto_awesome" :
-                    spell.school === "Divination" ? "visibility" :
-                    spell.school === "Enchantment" ? "psychology" :
-                    spell.school === "Illusion" ? "blur_on" :
-                    spell.school === "Necromancy" ? "skull" :
-                    spell.school === "Transmutation" ? "swap_horiz" : "auto_fix_high"}
-                  size={20}
-                  style={{ color: selected ? "var(--dm-primary)" : "var(--dm-text-muted)", flexShrink: 0 }}
-                />
+                <Icon name={spellIcon} size={20} style={{ color: selected ? "var(--dm-primary)" : "var(--dm-text-muted)", flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 500, color: selected ? "var(--dm-on-primary-container)" : "var(--dm-text)" }}>
                     {spell.name}
@@ -2570,36 +2661,34 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                   </div>
                 </div>
                 {selected && <Icon name="check_circle" size={18} style={{ color: "var(--dm-primary)", flexShrink: 0 }} />}
+                {isMobile && (
+                  <div
+                    onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+                    style={{ padding: 4, flexShrink: 0 }}
+                  >
+                    <Icon name={expanded ? "expand_less" : "expand_more"} size={20} style={{ color: "var(--dm-text-muted)" }} />
+                  </div>
+                )}
               </Ripple>
-              {tipOpen && (
+              {/* Mobile: inline expand */}
+              {isMobile && expanded && (
+                <div style={{
+                  padding: "12px 16px", borderRadius: "0 0 12px 12px",
+                  background: "var(--dm-surface-brighter)",
+                  border: "1px solid var(--dm-outline-variant)", borderTop: "none",
+                }}>
+                  {detailContent}
+                </div>
+              )}
+              {/* Desktop: hover tooltip */}
+              {!isMobile && tipOpen && (
                 <div ref={ttRef} style={{
                   ...ttStyle, padding: 14, borderRadius: 12,
                   background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
                   boxShadow: "0 8px 24px rgba(0,0,0,0.5)", zIndex: 100, pointerEvents: "none",
                 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: "var(--dm-primary)", marginBottom: 6 }}>{spell.name}</div>
-                  <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
-                    <span style={{ color: "var(--dm-text-muted)" }}>School: </span>{spell.school}
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
-                    <span style={{ color: "var(--dm-text-muted)" }}>Cast Time: </span>{spell.castingTime}
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
-                    <span style={{ color: "var(--dm-text-muted)" }}>Range: </span>{spell.range}
-                  </div>
-                  {spell.components && (
-                    <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
-                      <span style={{ color: "var(--dm-text-muted)" }}>Components: </span>
-                      {spell.components.map((c) => c === "V" ? "Verbal" : c === "S" ? "Somatic" : c === "M" ? "Material" : c).join(", ")}
-                      {spell.material && <span style={{ color: "var(--dm-text-muted)" }}> ({spell.material})</span>}
-                    </div>
-                  )}
-                  <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
-                    <span style={{ color: "var(--dm-text-muted)" }}>Duration: </span>{spell.duration}{spell.concentration ? " (Concentration)" : ""}
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--dm-text-secondary)", lineHeight: 1.5, marginTop: 6 }}>
-                    {spell.description.length > 200 ? spell.description.slice(0, 200) + "…" : spell.description}
-                  </div>
+                  {detailContent}
                 </div>
               )}
             </div>
@@ -2627,7 +2716,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                     {char.cantrips.length} / {slots.cantrips}
                   </span>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 8, marginBottom: 28 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(250px, 1fr))", gap: 8, marginBottom: 28 }}>
                   {availableCantrips.map((sp) => (
                     <SpellRow
                       key={sp.id}
@@ -2653,7 +2742,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                     {char.spells.length} / {slots.spells}
                   </span>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 8 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(250px, 1fr))", gap: 8 }}>
                   {availableSpells.map((sp) => (
                     <SpellRow
                       key={sp.id}
@@ -2721,27 +2810,31 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
     };
 
     return (
-      <div style={{ ...styles.root, height: "auto", minHeight: "100vh", overflow: "visible" }}>
-        <div style={styles.topBar}>
+      <div style={{ ...styles.root, height: "auto", minHeight: isMobile ? "100dvh" : "100vh", overflow: "visible" }}>
+        <div style={ms(isMobile, styles.topBar, { height: 56, minHeight: 56 })}>
           <Ripple onClick={onBack} style={styles.backBtn}>
             <Icon name="arrow_back" />
           </Ripple>
-          <Icon name="shield_with_house" size={24} filled style={{ color: "var(--dm-primary)" }} />
+          {!isMobile && <Icon name="shield_with_house" size={24} filled style={{ color: "var(--dm-primary)" }} />}
           <span style={{ fontSize: 16, fontWeight: 600 }}>Character Sheet</span>
         </div>
 
-        <div style={{ maxWidth: 800, margin: "0 auto", padding: "24px 20px" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto", padding: isMobile ? "16px 16px" : "24px 20px" }}>
           {/* Hero section */}
           <div style={{
             display: "flex", gap: 0, background: "var(--dm-surface)", borderRadius: 20,
             overflow: "hidden", border: "1px solid var(--dm-outline-variant)", marginBottom: 24,
+            ...(isMobile ? { flexDirection: "column" } : {}),
           }}>
             {(cImg || rImg) && (
-              <div style={{ width: 240, minWidth: 240, flexShrink: 0 }}>
+              <div style={isMobile
+                ? { width: "100%", height: 200, flexShrink: 0 }
+                : { width: 240, minWidth: 240, flexShrink: 0 }
+              }>
                 <img src={cImg || rImg} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />
               </div>
             )}
-            <div style={{ flex: 1, padding: "24px 28px" }}>
+            <div style={isMobile ? { flex: 1, padding: 16 } : { flex: 1, padding: "24px 28px" }}>
               {editing ? (
                 <input
                   value={char.name}
@@ -2844,7 +2937,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
 
           {/* Ability Scores */}
           <div style={{
-            display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, marginBottom: 24,
+            display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(6, 1fr)", gap: 10, marginBottom: 24,
           }}>
             {ABILITIES.map((ab) => {
               const base = assignedStats[ab] ?? 10;
@@ -2997,7 +3090,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                   </div>
                 )}
 
-                <div style={{ display: "grid", gridTemplateColumns: weapons.length > 0 && attackSpells.length > 0 ? "1fr 1fr" : "1fr", gap: 16 }}>
+                <div style={{ display: "grid", gridTemplateColumns: weapons.length > 0 && attackSpells.length > 0 && !isMobile ? "1fr 1fr" : "1fr", gap: 16 }}>
                   {/* Weapons */}
                   {weapons.length > 0 && (
                     <div>
@@ -3074,9 +3167,9 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
             ];
             const proficientSkills = new Set([...char.skills, ...(bgData?.skills || [])]);
             return (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 24 }}>
                 <div style={{
-                  background: "var(--dm-surface)", borderRadius: 16, padding: 20,
+                  background: "var(--dm-surface)", borderRadius: 16, padding: isMobile ? 16 : 20,
                   border: "1px solid var(--dm-outline-variant)",
                 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: "var(--dm-text-muted)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 14 }}>
@@ -3308,7 +3401,9 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
         {/* Bottom action bar */}
         <div style={{
           position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
-          display: "flex", justifyContent: "center", gap: 12, padding: "12px 20px",
+          display: "flex", justifyContent: "center", gap: 12,
+          padding: isMobile ? "12px 16px" : "12px 20px",
+          paddingBottom: isMobile ? "calc(12px + env(safe-area-inset-bottom, 0px))" : 12,
           background: "linear-gradient(transparent, var(--dm-bg) 30%)",
           pointerEvents: "none",
         }}>
@@ -3352,7 +3447,11 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
             {/* Backdrop click */}
             <div onClick={() => setOpenPanel(null)} style={{ position: "absolute", inset: 0 }} />
             {/* Modal */}
-            <div style={{
+            <div style={isMobile ? {
+              position: "relative", width: "100%", height: "100%",
+              background: "var(--dm-surface)", display: "flex", flexDirection: "column",
+              overflow: "hidden",
+            } : {
               position: "relative", width: "90%", maxWidth: 700,
               maxHeight: "80vh", background: "var(--dm-surface)",
               borderRadius: 20, display: "flex", flexDirection: "column",
@@ -3613,8 +3712,8 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                         </div>
 
                         <div style={{
-                          display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 20px",
-                          background: "var(--dm-surface-bright)", borderRadius: 14, padding: 16, marginBottom: 16,
+                          display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "10px 20px",
+                          background: "var(--dm-surface-bright)", borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 16,
                           fontSize: 13,
                         }}>
                           <div><span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Casting Time: </span>{sp.castingTime}</div>
@@ -3798,31 +3897,50 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
   }
 
   return (
-    <div style={styles.root}>
+    <div style={ms(isMobile, styles.root, { height: "100dvh" })}>
       {/* Top bar */}
-      <div style={styles.topBar}>
+      <div style={ms(isMobile, styles.topBar, { height: 56, minHeight: 56 })}>
         <Ripple onClick={onBack} style={styles.backBtn}>
           <Icon name="arrow_back" />
         </Ripple>
-        <Icon
-          name="shield_with_house"
-          size={24}
-          filled
-          style={{ color: "var(--dm-primary)" }}
-        />
-        <span style={{ fontSize: 18, fontWeight: 500 }}>Character Creator</span>
-        <div style={{ flex: 1 }} />
+        {!isMobile && (
+          <>
+            <Icon
+              name="shield_with_house"
+              size={24}
+              filled
+              style={{ color: "var(--dm-primary)" }}
+            />
+            <span style={{ fontSize: 18, fontWeight: 500 }}>Character Creator</span>
+            <div style={{ flex: 1 }} />
+          </>
+        )}
         <input
           placeholder="Character name"
           value={char.name}
           onChange={(e) => update("name", e.target.value)}
           className="m3input"
-          style={{ width: 220, fontSize: 14, textAlign: "center" }}
+          style={isMobile
+            ? { flex: 1, minWidth: 0, fontSize: 14, textAlign: "center" }
+            : { width: 220, fontSize: 14, textAlign: "center" }
+          }
         />
       </div>
 
       {/* Step indicator */}
-      <div style={styles.stepBar}>
+      <div
+        ref={stepBarRef}
+        className={isMobile ? "mobile-hide-scrollbar" : undefined}
+        style={ms(isMobile, styles.stepBar, {
+          flexWrap: "nowrap",
+          justifyContent: "flex-start",
+          overflowX: "auto",
+          scrollSnapType: "x mandatory",
+          WebkitOverflowScrolling: "touch",
+          padding: "0 12px 10px",
+          gap: 2,
+        })}
+      >
         {STEPS.map((s, i) => {
           const done = stepComplete(i);
           const active = i === step;
@@ -3833,8 +3951,8 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
-                padding: "8px 14px",
+                gap: isMobile ? 0 : 8,
+                padding: isMobile ? "8px 10px" : "8px 14px",
                 borderRadius: 20,
                 background: active
                   ? "var(--dm-secondary-container)"
@@ -3847,6 +3965,8 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                 fontWeight: active ? 600 : 400,
                 fontSize: 13,
                 transition: "all 0.2s",
+                flexShrink: 0,
+                scrollSnapAlign: isMobile ? "center" : undefined,
               }}
             >
               <span
@@ -3873,7 +3993,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
               >
                 {done ? <Icon name="check" size={14} /> : i + 1}
               </span>
-              {s}
+              {!isMobile && s}
             </Ripple>
           );
         })}
@@ -3881,212 +4001,284 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
 
       <div style={styles.body}>
         {/* Main content */}
-        <div style={styles.main}>
-          {renderStep()}
-
-          {/* Nav buttons */}
+        <div style={ms(isMobile, styles.main, { padding: "16px 16px 80px", WebkitOverflowScrolling: "touch" })}>
           <div
-            style={{
-              display: "flex",
-              gap: 8,
-              marginTop: 24,
-              justifyContent: "space-between",
-            }}
+            key={step}
+            style={isMobile ? {
+              animation: `m3stepIn 0.2s cubic-bezier(0.4, 0, 0.2, 1)`,
+            } : undefined}
           >
-            {step > 0 ? (
-              <Ripple onClick={prev} style={styles.secondaryBtn}>
-                <Icon name="arrow_back" size={18} style={{ marginRight: 4 }} />{" "}
-                Back
-              </Ripple>
-            ) : <div />}
-            {step < STEPS.length - 1 ? (
-              <Ripple onClick={next} style={styles.secondaryBtn}>
-                Next{" "}
-                <Icon name="arrow_forward" size={18} style={{ marginLeft: 4 }} />
-              </Ripple>
-            ) : (
-              <Ripple
-                onClick={() => {
-                  if (!char.name.trim()) return;
-                  const chars = loadCharacters();
-                  const charToSave = { ...char, assignedStats, id: editId || char.id || Date.now().toString() };
-                  const existing = chars.findIndex((c) => c.id === charToSave.id);
-                  if (existing >= 0) {
-                    chars[existing] = charToSave;
-                  } else {
-                    chars.push(charToSave);
-                  }
-                  saveCharacters(chars);
-                  syncCharacterToParty(charToSave);
-                  localStorage.removeItem(STORAGE_KEY);
-                  setFinished(true);
-                }}
-                style={{
-                  ...styles.primaryBtn,
-                  opacity: char.name.trim() ? 1 : 0.4,
-                  cursor: char.name.trim() ? "pointer" : "default",
-                }}
-              >
-                <Icon name="check" size={18} style={{ marginRight: 4 }} />{" "}
-                Finish
-              </Ripple>
-            )}
+            {renderStep()}
           </div>
-        </div>
 
-        {/* Summary panel */}
-        <div style={styles.summary}>
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: "var(--dm-text-muted)",
-              letterSpacing: 0.5,
-              textTransform: "uppercase",
-              marginBottom: 12,
-            }}
-          >
-            Summary
-          </div>
-          {char.name && <SummaryRow label="Name" value={char.name} />}
-          {raceData && (
-            <SummaryRow
-              label="Race"
-              value={raceData.name}
-              icon={RACE_ICONS[char.race]}
-            />
-          )}
-          {classData && (
-            <SummaryRow
-              label="Class"
-              value={`${classData.name} (Lvl ${char.level})`}
-              icon={CLASS_ICONS[char.class]}
-              sub={char.skills.length > 0 ? `Skills: ${char.skills.join(", ")}` : null}
-            />
-          )}
-          {bgData && (
-            <SummaryRow
-              label="Background"
-              value={bgData.name}
-              icon={bgData.icon}
-              sub={bgData.skills.join(", ")}
-            />
-          )}
-          {alData && (
-            <SummaryRow
-              label="Alignment"
-              value={alData.name}
-              icon={alData.icon}
-            />
-          )}
-          {Object.keys(assignedStats).length > 0 && (
-            <div style={{ marginTop: 10 }}>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "var(--dm-text-muted)",
-                  fontWeight: 600,
-                  marginBottom: 6,
-                  letterSpacing: 0.5,
-                  textTransform: "uppercase",
-                }}
-              >
-                Stats
-              </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
-                  gap: 4,
-                }}
-              >
-                {ABILITIES.map((ab) => {
-                  const val = assignedStats[ab];
-                  if (val == null) return null;
-                  const total = val + getRacialBonus(ab);
-                  return (
-                    <div
-                      key={ab}
-                      style={{
-                        textAlign: "center",
-                        padding: 6,
-                        borderRadius: 8,
-                        background: "var(--dm-surface-bright)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 10,
-                          color: "var(--dm-text-muted)",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {ab}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 16,
-                          fontWeight: 700,
-                          color: "var(--dm-primary)",
-                        }}
-                      >
-                        {total}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-          {computedEquipment.length > 0 && (
-            <div style={{ marginTop: 10 }}>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "var(--dm-text-muted)",
-                  fontWeight: 600,
-                  marginBottom: 4,
-                  letterSpacing: 0.5,
-                  textTransform: "uppercase",
-                }}
-              >
-                Equipment
-              </div>
-              {computedEquipment.map((eq, i) => (
-                <div
-                  key={eq.id + "-" + i}
+          {/* Nav buttons — inline on desktop */}
+          {!isMobile && (
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                marginTop: 24,
+                justifyContent: "space-between",
+              }}
+            >
+              {step > 0 ? (
+                <Ripple onClick={prev} style={styles.secondaryBtn}>
+                  <Icon name="arrow_back" size={18} style={{ marginRight: 4 }} />{" "}
+                  Back
+                </Ripple>
+              ) : <div />}
+              {step < STEPS.length - 1 ? (
+                <Ripple onClick={next} style={styles.secondaryBtn}>
+                  Next{" "}
+                  <Icon name="arrow_forward" size={18} style={{ marginLeft: 4 }} />
+                </Ripple>
+              ) : (
+                <Ripple
+                  onClick={() => {
+                    if (!char.name.trim()) return;
+                    const chars = loadCharacters();
+                    const charToSave = { ...char, assignedStats, id: editId || char.id || Date.now().toString() };
+                    const existing = chars.findIndex((c) => c.id === charToSave.id);
+                    if (existing >= 0) {
+                      chars[existing] = charToSave;
+                    } else {
+                      chars.push(charToSave);
+                    }
+                    saveCharacters(chars);
+                    syncCharacterToParty(charToSave);
+                    localStorage.removeItem(STORAGE_KEY);
+                    setFinished(true);
+                  }}
                   style={{
-                    fontSize: 13,
-                    color: "var(--dm-text-secondary)",
-                    padding: "2px 0",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
+                    ...styles.primaryBtn,
+                    opacity: char.name.trim() ? 1 : 0.4,
+                    cursor: char.name.trim() ? "pointer" : "default",
                   }}
                 >
-                  <Icon
-                    name={eq.icon}
-                    size={14}
-                    style={{ color: "var(--dm-text-muted)" }}
-                  />{" "}
-                  {eq.name}
-                </div>
-              ))}
+                  <Icon name="check" size={18} style={{ marginRight: 4 }} />{" "}
+                  Finish
+                </Ripple>
+              )}
             </div>
           )}
-          {!char.race && !char.class && !char.name && (
+        </div>
+
+        {/* Summary panel — desktop only */}
+        {!isMobile && (
+          <div style={styles.summary}>
             <div
               style={{
                 fontSize: 13,
+                fontWeight: 600,
                 color: "var(--dm-text-muted)",
-                fontStyle: "italic",
+                letterSpacing: 0.5,
+                textTransform: "uppercase",
+                marginBottom: 12,
               }}
             >
-              Make selections to build your character...
+              Summary
             </div>
+            {char.name && <SummaryRow label="Name" value={char.name} />}
+            {raceData && (
+              <SummaryRow
+                label="Race"
+                value={raceData.name}
+                icon={RACE_ICONS[char.race]}
+              />
+            )}
+            {classData && (
+              <SummaryRow
+                label="Class"
+                value={`${classData.name} (Lvl ${char.level})`}
+                icon={CLASS_ICONS[char.class]}
+                sub={char.skills.length > 0 ? `Skills: ${char.skills.join(", ")}` : null}
+              />
+            )}
+            {bgData && (
+              <SummaryRow
+                label="Background"
+                value={bgData.name}
+                icon={bgData.icon}
+                sub={bgData.skills.join(", ")}
+              />
+            )}
+            {alData && (
+              <SummaryRow
+                label="Alignment"
+                value={alData.name}
+                icon={alData.icon}
+              />
+            )}
+            {Object.keys(assignedStats).length > 0 && (
+              <div style={{ marginTop: 10 }}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "var(--dm-text-muted)",
+                    fontWeight: 600,
+                    marginBottom: 6,
+                    letterSpacing: 0.5,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Stats
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: 4,
+                  }}
+                >
+                  {ABILITIES.map((ab) => {
+                    const val = assignedStats[ab];
+                    if (val == null) return null;
+                    const total = val + getRacialBonus(ab);
+                    return (
+                      <div
+                        key={ab}
+                        style={{
+                          textAlign: "center",
+                          padding: 6,
+                          borderRadius: 8,
+                          background: "var(--dm-surface-bright)",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: "var(--dm-text-muted)",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {ab}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 16,
+                            fontWeight: 700,
+                            color: "var(--dm-primary)",
+                          }}
+                        >
+                          {total}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {computedEquipment.length > 0 && (
+              <div style={{ marginTop: 10 }}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "var(--dm-text-muted)",
+                    fontWeight: 600,
+                    marginBottom: 4,
+                    letterSpacing: 0.5,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Equipment
+                </div>
+                {computedEquipment.map((eq, i) => (
+                  <div
+                    key={eq.id + "-" + i}
+                    style={{
+                      fontSize: 13,
+                      color: "var(--dm-text-secondary)",
+                      padding: "2px 0",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    <Icon
+                      name={eq.icon}
+                      size={14}
+                      style={{ color: "var(--dm-text-muted)" }}
+                    />{" "}
+                    {eq.name}
+                  </div>
+                ))}
+              </div>
+            )}
+            {!char.race && !char.class && !char.name && (
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "var(--dm-text-muted)",
+                  fontStyle: "italic",
+                }}
+              >
+                Make selections to build your character...
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Mobile fixed nav buttons */}
+      {isMobile && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 20,
+            display: "flex",
+            gap: 8,
+            padding: "12px 16px",
+            paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))",
+            background: "var(--dm-bg)",
+            borderTop: "1px solid var(--dm-outline-variant)",
+          }}
+        >
+          {step > 0 ? (
+            <Ripple onClick={prev} style={{ ...styles.secondaryBtn, flex: 1, justifyContent: "center", padding: "14px 24px" }}>
+              <Icon name="arrow_back" size={18} style={{ marginRight: 4 }} />{" "}
+              Back
+            </Ripple>
+          ) : <div style={{ flex: 1 }} />}
+          {step < STEPS.length - 1 ? (
+            <Ripple onClick={next} style={{ ...styles.primaryBtn, flex: 1, justifyContent: "center", padding: "14px 24px" }}>
+              Next{" "}
+              <Icon name="arrow_forward" size={18} style={{ marginLeft: 4 }} />
+            </Ripple>
+          ) : (
+            <Ripple
+              onClick={() => {
+                if (!char.name.trim()) return;
+                const chars = loadCharacters();
+                const charToSave = { ...char, assignedStats, id: editId || char.id || Date.now().toString() };
+                const existing = chars.findIndex((c) => c.id === charToSave.id);
+                if (existing >= 0) {
+                  chars[existing] = charToSave;
+                } else {
+                  chars.push(charToSave);
+                }
+                saveCharacters(chars);
+                syncCharacterToParty(charToSave);
+                localStorage.removeItem(STORAGE_KEY);
+                setFinished(true);
+              }}
+              style={{
+                ...styles.primaryBtn,
+                flex: 1,
+                justifyContent: "center",
+                padding: "14px 24px",
+                opacity: char.name.trim() ? 1 : 0.4,
+                cursor: char.name.trim() ? "pointer" : "default",
+              }}
+            >
+              <Icon name="check" size={18} style={{ marginRight: 4 }} />{" "}
+              Finish
+            </Ripple>
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 }

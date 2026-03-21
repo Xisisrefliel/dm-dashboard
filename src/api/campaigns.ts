@@ -23,7 +23,7 @@ async function uniqueSlug(userId: string, name: string, excludeId?: string): Pro
   }
 }
 
-function formatCampaignSummary(c: any) {
+function formatCampaignSummary(c: any, role: string = "owner") {
   return {
     id: c.id,
     slug: c.slug,
@@ -32,6 +32,7 @@ function formatCampaignSummary(c: any) {
     color: c.color,
     docCount: c.doc_count,
     categoryCount: c.category_count,
+    role,
   };
 }
 
@@ -41,7 +42,7 @@ export const campaignRoutes = {
       const user = await getSession(req);
       if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-      const campaigns = await sql`
+      const owned = await sql`
         SELECT c.*,
           (SELECT COUNT(*)::int FROM docs WHERE campaign_id = c.id) AS doc_count,
           (SELECT COUNT(*)::int FROM categories WHERE campaign_id = c.id) AS category_count
@@ -50,7 +51,20 @@ export const campaignRoutes = {
         ORDER BY c.updated_at DESC
       `;
 
-      return Response.json(campaigns.map(formatCampaignSummary));
+      const joined = await sql`
+        SELECT c.*,
+          (SELECT COUNT(*)::int FROM docs WHERE campaign_id = c.id AND shared_with_party = true) AS doc_count,
+          (SELECT COUNT(*)::int FROM categories WHERE campaign_id = c.id) AS category_count
+        FROM campaigns c
+        JOIN campaign_members cm ON cm.campaign_id = c.id
+        WHERE cm.user_id = ${user.id}
+        ORDER BY c.updated_at DESC
+      `;
+
+      return Response.json([
+        ...owned.map((c: any) => formatCampaignSummary(c, "owner")),
+        ...joined.map((c: any) => formatCampaignSummary(c, "member")),
+      ]);
     },
 
     async POST(req: Request) {
@@ -111,13 +125,24 @@ export const campaignRoutes = {
 
       const { id } = (req as any).params;
 
-      // Accept both UUID and slug
+      // Accept both UUID and slug — check ownership first, then membership
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-/.test(id);
       const [campaign] = isUUID
-        ? await sql`SELECT * FROM campaigns WHERE id = ${id} AND user_id = ${user.id}`
-        : await sql`SELECT * FROM campaigns WHERE slug = ${id} AND user_id = ${user.id}`;
+        ? await sql`SELECT * FROM campaigns WHERE id = ${id}`
+        : await sql`SELECT * FROM campaigns WHERE slug = ${id}`;
       if (!campaign) {
         return Response.json({ error: "Not found" }, { status: 404 });
+      }
+
+      const isOwner = campaign.user_id === user.id;
+      if (!isOwner) {
+        // Check membership
+        const [member] = await sql`
+          SELECT id FROM campaign_members WHERE campaign_id = ${campaign.id} AND user_id = ${user.id}
+        `;
+        if (!member) {
+          return Response.json({ error: "Not found" }, { status: 404 });
+        }
       }
 
       const categories = await sql`
@@ -126,12 +151,19 @@ export const campaignRoutes = {
         ORDER BY sort_order
       `;
 
-      const docs = await sql`
-        SELECT id, category_key AS category, title, icon, content, parent_id
-        FROM docs
-        WHERE campaign_id = ${campaign.id}
-        ORDER BY created_at
-      `;
+      const docs = isOwner
+        ? await sql`
+            SELECT id, category_key AS category, title, icon, content, parent_id, shared_with_party
+            FROM docs
+            WHERE campaign_id = ${campaign.id}
+            ORDER BY created_at
+          `
+        : await sql`
+            SELECT id, category_key AS category, title, icon, content, parent_id, shared_with_party
+            FROM docs
+            WHERE campaign_id = ${campaign.id} AND shared_with_party = true
+            ORDER BY created_at
+          `;
 
       return Response.json({
         id: campaign.id,
@@ -139,6 +171,7 @@ export const campaignRoutes = {
         name: campaign.name,
         description: campaign.description,
         color: campaign.color,
+        role: isOwner ? "owner" : "member",
         categories: categories.map((c: any) => ({
           key: c.key,
           label: c.label,
@@ -151,6 +184,7 @@ export const campaignRoutes = {
           icon: d.icon,
           content: d.content,
           parentId: d.parent_id || null,
+          shared: d.shared_with_party || false,
         })),
       });
     },

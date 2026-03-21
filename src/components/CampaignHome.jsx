@@ -147,10 +147,10 @@ function CampaignHome({ campaigns, onSelect, onCreate, onDelete, onRename, user,
           <Ripple
             key={c.id}
             onClick={() => onSelect(c.id, c.slug)}
-            onContextMenu={(e) => {
+            onContextMenu={c.role !== "member" ? (e) => {
               e.preventDefault();
               setCtxMenu({ x: e.clientX, y: e.clientY, campaign: c });
-            }}
+            } : undefined}
             style={{
               background: "var(--dm-surface)",
               borderRadius: 20,
@@ -174,20 +174,32 @@ function CampaignHome({ campaigns, onSelect, onCreate, onDelete, onRename, user,
                 }}
               >
                 <Icon
-                  name="shield_with_house"
+                  name={c.role === "member" ? "person" : "shield_with_house"}
                   size={24}
                   filled
                   style={{ color: c.color }}
                 />
               </div>
-              <div
-                style={{
-                  fontSize: 18,
-                  fontWeight: 600,
-                  letterSpacing: "-0.01em",
-                }}
-              >
-                {c.name}
+              <div style={{ flex: 1 }}>
+                <div
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 600,
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  {c.name}
+                </div>
+                {c.role === "member" && (
+                  <div style={{
+                    fontSize: 11,
+                    fontWeight: 500,
+                    color: c.color || "var(--dm-primary)",
+                    marginTop: 2,
+                  }}>
+                    Player
+                  </div>
+                )}
               </div>
             </div>
             {c.description && (
