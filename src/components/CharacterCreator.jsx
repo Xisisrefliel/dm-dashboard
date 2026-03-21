@@ -831,6 +831,7 @@ const EMPTY_CHAR = {
   spells: [],
   skills: [],
   inventory: [],
+  acOverride: null,
 };
 
 // Common SRD items for the "Add Item" picker
@@ -2781,13 +2782,63 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                 </div>
               )}
 
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 24px", fontSize: 14 }}>
-                <div><span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>HP: </span>{hp}</div>
-                <div><span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Hit Die: </span>d{classData?.hitDie}</div>
-                <div><span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Proficiency: </span>+{profBonus}</div>
-                <div><span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Speed: </span>{raceData?.speed} ft</div>
-                {alData && <div><span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Alignment: </span>{alData.name}</div>}
-              </div>
+              {(() => {
+                // Calculate AC from equipment
+                const dexScore = (assignedStats.DEX ?? 10) + getRacialBonus("DEX");
+                const dexMod = Math.floor((dexScore - 10) / 2);
+                let baseAC = 10 + dexMod; // unarmored
+                let hasShield = false;
+                computedEquipment.forEach((it) => {
+                  const props = it.properties || "";
+                  if (props.includes("+2 Armor Class")) { hasShield = true; return; }
+                  const acMatch = props.match(/AC (\d+)/);
+                  if (acMatch) {
+                    const armorAC = parseInt(acMatch[1]);
+                    if (props.includes("max 2")) baseAC = armorAC + Math.min(dexMod, 2);
+                    else if (props.includes("Dex modifier")) baseAC = armorAC + dexMod;
+                    else baseAC = armorAC; // heavy armor, no dex
+                  }
+                });
+                if (hasShield) baseAC += 2;
+                // Monk/Barbarian unarmored defense
+                const hasArmor = computedEquipment.some((it) => (it.properties || "").match(/AC \d+/));
+                if (!hasArmor && char.class === "barbarian") {
+                  const conScore = (assignedStats.CON ?? 10) + getRacialBonus("CON");
+                  const conMod = Math.floor((conScore - 10) / 2);
+                  baseAC = 10 + dexMod + conMod + (hasShield ? 2 : 0);
+                } else if (!hasArmor && char.class === "monk") {
+                  const wisScore = (assignedStats.WIS ?? 10) + getRacialBonus("WIS");
+                  const wisMod = Math.floor((wisScore - 10) / 2);
+                  baseAC = 10 + dexMod + wisMod;
+                }
+                const ac = char.acOverride != null ? char.acOverride : baseAC;
+
+                return (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 24px", fontSize: 14 }}>
+                    <div>
+                      <span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>AC: </span>
+                      {editing ? (
+                        <input
+                          type="number"
+                          value={char.acOverride != null ? char.acOverride : baseAC}
+                          onChange={(e) => {
+                            const v = parseInt(e.target.value);
+                            update("acOverride", isNaN(v) || v === baseAC ? null : v);
+                          }}
+                          style={{ ...inputStyle, width: 48, padding: "2px 6px", fontSize: 14, display: "inline-block" }}
+                        />
+                      ) : (
+                        <span style={{ fontWeight: 700 }}>{ac}</span>
+                      )}
+                    </div>
+                    <div><span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>HP: </span>{hp}</div>
+                    <div><span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Hit Die: </span>d{classData?.hitDie}</div>
+                    <div><span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Proficiency: </span>+{profBonus}</div>
+                    <div><span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Speed: </span>{raceData?.speed} ft</div>
+                    {alData && <div><span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Alignment: </span>{alData.name}</div>}
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
