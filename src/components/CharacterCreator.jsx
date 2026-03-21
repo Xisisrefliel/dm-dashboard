@@ -250,6 +250,99 @@ const ALIGNMENTS = [
   },
 ];
 
+const ALIGNMENT_QUESTIONS = [
+  {
+    q: "A dragon has enslaved a village and demands tribute. What do you do?",
+    answers: [
+      { text: "Rally the townsfolk and challenge the dragon according to the old laws of combat.", law: 1, good: 1 },
+      { text: "Sneak into its lair and free the captives while it sleeps.", law: -1, good: 1 },
+      { text: "Negotiate a deal — you'll pay the tribute if the dragon grants you a favour.", law: 0, good: -1 },
+      { text: "Walk away. It's not your village.", law: 0, good: 0 },
+    ],
+  },
+  {
+    q: "You find a powerful cursed sword in a dungeon. A paladin in your party says it must be destroyed.",
+    answers: [
+      { text: "Agree — cursed items should be destroyed for the greater good.", law: 1, good: 1 },
+      { text: "Keep it hidden. Power is power, and you might need it someday.", law: -1, good: -1 },
+      { text: "Study it first. Knowledge shouldn't be wasted, then decide.", law: 0, good: 0 },
+      { text: "Hand it to the local temple and let the clerics decide.", law: 1, good: 0 },
+    ],
+  },
+  {
+    q: "A beggar on the street turns out to be a wanted criminal in disguise. Guards are approaching.",
+    answers: [
+      { text: "Point him out to the guards. The law is the law.", law: 1, good: 0 },
+      { text: "Hide him. Everyone deserves a second chance.", law: -1, good: 1 },
+      { text: "Demand payment for your silence.", law: -1, good: -1 },
+      { text: "Ignore the situation entirely and keep walking.", law: 0, good: 0 },
+    ],
+  },
+  {
+    q: "Your party discovers a tribe of goblins farming peacefully. Your quest says to clear them out.",
+    answers: [
+      { text: "They're peaceful — refuse the quest and protect them.", law: -1, good: 1 },
+      { text: "A contract is a contract. Complete the quest as agreed.", law: 1, good: -1 },
+      { text: "Negotiate with both sides to find a compromise.", law: 0, good: 1 },
+      { text: "Extort the goblins for gold, then tell the questgiver they fled.", law: -1, good: -1 },
+    ],
+  },
+  {
+    q: "A king offers you a title and lands in exchange for assassinating his rival.",
+    answers: [
+      { text: "Refuse. Murder for politics is beneath you.", law: 1, good: 1 },
+      { text: "Accept. Power and land are worth one life.", law: 0, good: -1 },
+      { text: "Warn the rival and offer to protect them instead.", law: -1, good: 1 },
+      { text: "Play both sides and sell information to the highest bidder.", law: -1, good: -1 },
+    ],
+  },
+  {
+    q: "You catch a fellow party member stealing from a merchant while they're distracted.",
+    answers: [
+      { text: "Confront them immediately and insist they return it.", law: 1, good: 1 },
+      { text: "Say nothing — it's their business, not yours.", law: 0, good: 0 },
+      { text: "Ask for a cut of the take.", law: -1, good: -1 },
+      { text: "Secretly return the item to the merchant yourself.", law: 0, good: 1 },
+    ],
+  },
+  {
+    q: "A dying wizard offers you their spellbook, but it's bound by an oath to their arcane order.",
+    answers: [
+      { text: "Return it to the order. Oaths must be honoured, even after death.", law: 1, good: 0 },
+      { text: "Take it. The wizard offered it freely and the dead have no claims.", law: -1, good: 0 },
+      { text: "Copy what you need, then return the original.", law: 0, good: 0 },
+      { text: "Deliver it to the order and ask for a reward or membership.", law: 1, good: -1 },
+    ],
+  },
+  {
+    q: "You stumble upon a ritual that could resurrect a fallen hero — but requires a sacrifice.",
+    answers: [
+      { text: "No life is worth trading for another. Walk away.", law: 1, good: 1 },
+      { text: "Sacrifice a captured enemy. The hero's return will save thousands.", law: 0, good: 0 },
+      { text: "Offer yourself if needed — some causes are worth dying for.", law: 0, good: 1 },
+      { text: "Use the ritual for your own purposes instead.", law: -1, good: -1 },
+    ],
+  },
+  {
+    q: "A town's corrupt mayor has been secretly funding an orphanage with embezzled gold.",
+    answers: [
+      { text: "Expose the corruption. The law must be upheld regardless.", law: 1, good: 0 },
+      { text: "Let it slide. The children benefit, and that's what matters.", law: -1, good: 1 },
+      { text: "Blackmail the mayor — if they're skimming, so can you.", law: -1, good: -1 },
+      { text: "Convince the mayor to fund the orphanage legitimately.", law: 1, good: 1 },
+    ],
+  },
+  {
+    q: "An ancient tome reveals a spell that could end a war — but it would also destroy an entire forest.",
+    answers: [
+      { text: "Use it. Ending the war saves more lives than the forest.", law: 0, good: 0 },
+      { text: "Refuse. The natural world must be preserved at all costs.", law: 0, good: 1 },
+      { text: "Sell the knowledge to whichever side pays more.", law: -1, good: -1 },
+      { text: "Present the spell to the war council and let them vote.", law: 1, good: 0 },
+    ],
+  },
+];
+
 const ABILITIES = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
 const ABILITY_NAMES = {
   STR: "Strength",
@@ -478,7 +571,18 @@ function CharacterCreator({ onBack }) {
 
   const selectAndAdvance = (key, val) => {
     update(key, val);
-    next();
+  };
+
+  const stepComplete = (i) => {
+    switch (i) {
+      case 0: return char.race != null;
+      case 1: return char.class != null;
+      case 2: return char.background != null;
+      case 3: return Object.keys(assignedStats).length === 6;
+      case 4: return char.alignment != null;
+      case 5: return char.equipment.length > 0;
+      default: return false;
+    }
   };
 
   // Equipment options derived from class
@@ -534,13 +638,50 @@ function CharacterCreator({ onBack }) {
     return opts;
   }, [classData]);
 
+  const MAX_EQUIPMENT = 4;
   const toggleEquip = (id) =>
     update(
       "equipment",
       char.equipment.includes(id)
         ? char.equipment.filter((e) => e !== id)
-        : [...char.equipment, id],
+        : char.equipment.length < MAX_EQUIPMENT
+          ? [...char.equipment, id]
+          : char.equipment,
     );
+
+  // Alignment quiz
+  const [quizQuestions] = useState(() => {
+    const shuffled = [...ALIGNMENT_QUESTIONS].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 2);
+  });
+  const [quizAnswers, setQuizAnswers] = useState([]);
+  const [quizDone, setQuizDone] = useState(false);
+  const [suggestedAlignment, setSuggestedAlignment] = useState(null);
+
+  const answerQuiz = (answer) => {
+    const newAnswers = [...quizAnswers, answer];
+    setQuizAnswers(newAnswers);
+    if (newAnswers.length >= 2) {
+      const totalLaw = newAnswers.reduce((s, a) => s + a.law, 0);
+      const totalGood = newAnswers.reduce((s, a) => s + a.good, 0);
+      const lawAxis = totalLaw > 0 ? "l" : totalLaw < 0 ? "c" : "n"; // second char for ln/tn/cn
+      const goodAxis = totalGood > 0 ? "g" : totalGood < 0 ? "e" : "n";
+      // Map to alignment id: lg, ng, cg, ln, tn, cn, le, ne, ce
+      let id;
+      if (lawAxis === "n" && goodAxis === "n") id = "tn";
+      else if (lawAxis === "n") id = "n" + goodAxis;
+      else if (goodAxis === "n") id = lawAxis + "n";
+      else id = lawAxis + goodAxis;
+      setSuggestedAlignment(id);
+      setQuizDone(true);
+    }
+  };
+
+  const resetQuiz = () => {
+    setQuizAnswers([]);
+    setQuizDone(false);
+    setSuggestedAlignment(null);
+  };
 
   // Stat assignment
   const [unassigned, setUnassigned] = useState([...STANDARD_ARRAY]);
@@ -557,6 +698,22 @@ function CharacterCreator({ onBack }) {
     const newAssigned = { ...assignedStats, [ability]: val };
     setAssignedStats(newAssigned);
     update("stats", { ...char.stats, [ability]: val });
+  };
+
+  const rollStats = () => {
+    const roll4d6 = () => {
+      const dice = Array.from({ length: 4 }, () => Math.floor(Math.random() * 6) + 1);
+      dice.sort((a, b) => a - b);
+      return dice[1] + dice[2] + dice[3]; // drop lowest
+    };
+    const rolled = Array.from({ length: 6 }, roll4d6).sort((a, b) => b - a);
+    setUnassigned(rolled);
+    setAssignedStats({});
+  };
+
+  const resetToStandard = () => {
+    setUnassigned([...STANDARD_ARRAY]);
+    setAssignedStats({});
   };
 
   const clearStat = (ability) => {
@@ -782,11 +939,19 @@ function CharacterCreator({ onBack }) {
           <div>
             <h2 style={styles.stepTitle}>Assign Ability Scores</h2>
             <p style={styles.stepDesc}>
-              Assign the standard array ({STANDARD_ARRAY.join(", ")}) to your
-              abilities.
+              Assign scores to your abilities.
               {raceData &&
                 ` Racial bonuses from ${raceData.name} are added automatically.`}
             </p>
+
+            <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+              <Ripple onClick={rollStats} style={{ ...styles.secondaryBtn, gap: 6 }}>
+                <Icon name="casino" size={18} /> Roll 4d6
+              </Ripple>
+              <Ripple onClick={resetToStandard} style={{ ...styles.secondaryBtn, gap: 6 }}>
+                <Icon name="restart_alt" size={18} /> Standard Array
+              </Ripple>
+            </div>
 
             {unassigned.length > 0 && (
               <div
@@ -950,12 +1115,79 @@ function CharacterCreator({ onBack }) {
         );
 
       case 4: // Alignment
+        const currentQ = quizQuestions[quizAnswers.length];
+        const suggested = suggestedAlignment ? ALIGNMENTS.find((a) => a.id === suggestedAlignment) : null;
         return (
           <div>
-            <h2 style={styles.stepTitle}>Choose your Alignment</h2>
+            <h2 style={styles.stepTitle}>Discover your Alignment</h2>
             <p style={styles.stepDesc}>
-              Alignment represents your character's moral and ethical compass.
+              Answer these questions to reveal your character's moral compass — or pick one directly below.
             </p>
+
+            {/* Quiz section */}
+            {!quizDone && currentQ && (
+              <div style={{
+                background: "var(--dm-surface)", borderRadius: 16, padding: 24,
+                marginBottom: 24, border: "1px solid var(--dm-outline-variant)",
+              }}>
+                <div style={{ fontSize: 13, color: "var(--dm-text-muted)", marginBottom: 8 }}>
+                  Question {quizAnswers.length + 1} of 2
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 20, lineHeight: 1.5 }}>
+                  {currentQ.q}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {currentQ.answers.map((ans, i) => (
+                    <Ripple
+                      key={i}
+                      onClick={() => answerQuiz(ans)}
+                      style={{
+                        padding: "14px 16px", borderRadius: 12,
+                        background: "var(--dm-surface-bright)",
+                        border: "1px solid var(--dm-outline-variant)",
+                        fontSize: 14, lineHeight: 1.5, textAlign: "left",
+                        color: "var(--dm-text)",
+                      }}
+                    >
+                      {ans.text}
+                    </Ripple>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Quiz result */}
+            {quizDone && suggested && (
+              <div style={{
+                background: suggested.color + "12", borderRadius: 16, padding: 24,
+                marginBottom: 24, border: `1px solid ${suggested.color}40`,
+                textAlign: "center",
+              }}>
+                <Icon name={suggested.icon} size={36} style={{ color: suggested.color, marginBottom: 8 }} />
+                <div style={{ fontSize: 20, fontWeight: 700, color: suggested.color, marginBottom: 4 }}>
+                  {suggested.name}
+                </div>
+                <div style={{ fontSize: 14, color: "var(--dm-text-secondary)", marginBottom: 16, lineHeight: 1.5 }}>
+                  {suggested.desc}
+                </div>
+                <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+                  <Ripple
+                    onClick={() => selectAndAdvance("alignment", suggested.id)}
+                    style={{ ...styles.primaryBtn, gap: 6 }}
+                  >
+                    <Icon name="check" size={18} /> Accept {suggested.short}
+                  </Ripple>
+                  <Ripple onClick={resetQuiz} style={{ ...styles.secondaryBtn, gap: 6 }}>
+                    <Icon name="restart_alt" size={18} /> Retake Quiz
+                  </Ripple>
+                </div>
+              </div>
+            )}
+
+            {/* Manual grid always visible */}
+            <div style={{ fontSize: 13, color: "var(--dm-text-muted)", marginBottom: 10 }}>
+              {quizDone ? "Or pick a different alignment:" : "Or choose directly:"}
+            </div>
             <div
               style={{
                 display: "grid",
@@ -980,7 +1212,9 @@ function CharacterCreator({ onBack }) {
                     border:
                       char.alignment === al.id
                         ? `2px solid ${al.color}`
-                        : "1px solid var(--dm-outline-variant)",
+                        : suggestedAlignment === al.id
+                          ? `2px solid ${al.color}80`
+                          : "1px solid var(--dm-outline-variant)",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
@@ -1017,10 +1251,13 @@ function CharacterCreator({ onBack }) {
           <div>
             <h2 style={styles.stepTitle}>Choose Starting Equipment</h2>
             <p style={styles.stepDesc}>
-              Select your gear based on your class proficiencies.
+              Select up to {MAX_EQUIPMENT} items for your starting gear.
               {classData &&
                 ` As a ${classData.name}, you can use the equipment below.`}
             </p>
+            <div style={{ fontSize: 13, color: char.equipment.length >= MAX_EQUIPMENT ? "var(--dm-primary)" : "var(--dm-text-muted)", marginBottom: 16, fontWeight: 500 }}>
+              {char.equipment.length} / {MAX_EQUIPMENT} items selected
+            </div>
             <div style={styles.cardGrid}>
               {equipmentOptions.map((eq) => {
                 const selected = char.equipment.includes(eq.id);
@@ -1116,7 +1353,7 @@ function CharacterCreator({ onBack }) {
       {/* Step indicator */}
       <div style={styles.stepBar}>
         {STEPS.map((s, i) => {
-          const done = i < step;
+          const done = stepComplete(i);
           const active = i === step;
           return (
             <Ripple
