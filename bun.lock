@@ -8,6 +8,7 @@
         "postgres": "^3.4.8",
         "react": "^19",
         "react-dom": "^19",
+        "web-haptics": "^0.0.6",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -38,5 +39,7 @@
     "scheduler": ["scheduler@0.27.0", "", {}, "sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q=="],
 
     "undici-types": ["undici-types@7.18.2", "", {}, "sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w=="],
+
+    "web-haptics": ["web-haptics@0.0.6", "", { "peerDependencies": { "react": ">=18", "react-dom": ">=18", "svelte": ">=4", "vue": ">=3" }, "optionalPeers": ["react", "react-dom", "svelte", "vue"] }, "sha512-eCzcf1LDi20+Fr0x9V3OkX92k0gxEQXaHajmhXHitsnk6SxPeshv8TBtBRqxyst8HI1uf2FyFVE7QS3jo1gkrw=="],
   }
 }

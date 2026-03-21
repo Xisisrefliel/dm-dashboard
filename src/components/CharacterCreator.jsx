@@ -6,6 +6,7 @@ import Icon from "./ui/Icon.jsx";
 import Ripple from "./ui/Ripple.jsx";
 import { syncCharacterToParty } from "../utils/syncParty.js";
 import { useIsMobile } from "../hooks/useIsMobile.js";
+import { useWebHaptics } from "web-haptics/react";
 
 // Mobile style merge helper: returns base on desktop, base+mobile overrides on mobile
 const ms = (isMobile, base, mobile) => isMobile ? { ...base, ...mobile } : base;
@@ -1206,9 +1207,11 @@ const CLASS_STARTING_EQUIPMENT = {
 // Character list screen
 function CharacterList({ onBack, onNewCharacter, onEditCharacter }) {
   const isMobile = useIsMobile();
+  const haptic = useWebHaptics();
   const [characters, setCharacters] = useState(() => loadCharacters());
 
   const deleteCharacter = (id) => {
+    haptic.trigger("warning");
     const updated = characters.filter((c) => c.id !== id);
     setCharacters(updated);
     saveCharacters(updated);
@@ -1238,6 +1241,7 @@ function CharacterList({ onBack, onNewCharacter, onEditCharacter }) {
         <span style={{ fontSize: 16, fontWeight: 600 }}>My Characters</span>
         <div style={{ flex: 1 }} />
         <Ripple onClick={() => {
+          haptic.trigger("medium");
           localStorage.removeItem(STORAGE_KEY);
           onNewCharacter();
         }} style={{
@@ -1284,7 +1288,7 @@ function CharacterList({ onBack, onNewCharacter, onEditCharacter }) {
                   background: "var(--dm-surface)", borderRadius: 16, overflow: "hidden",
                   border: "1px solid var(--dm-outline-variant)", position: "relative",
                 }}>
-                  <Ripple onClick={() => onEditCharacter(ch.id)} style={{
+                  <Ripple onClick={() => { haptic.trigger("light"); onEditCharacter(ch.id); }} style={{
                     display: "flex", flexDirection: "column", width: "100%",
                   }}>
                     {img && (
@@ -1327,6 +1331,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
   }
 
   const isMobile = useIsMobile();
+  const haptic = useWebHaptics();
 
   // Load existing character if editing
   const editChar = useMemo(() => {
@@ -1358,8 +1363,8 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
     [char.class],
   );
 
-  const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
-  const prev = () => setStep((s) => Math.max(s - 1, 0));
+  const next = () => { haptic.trigger("medium"); setStep((s) => Math.min(s + 1, STEPS.length - 1)); };
+  const prev = () => { haptic.trigger("light"); setStep((s) => Math.max(s - 1, 0)); };
 
   const selectAndAdvance = (key, val) => {
     update(key, val);
@@ -1420,6 +1425,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
   // Legacy: keep char.equipment in sync for save/load compatibility
   // (we derive the display from computedEquipment, but store choice indices)
   const selectEquipChoice = (choiceIdx, optionId) => {
+    haptic.trigger("light");
     setChar((c) => ({
       ...c,
       equipChoices: { ...(c.equipChoices || {}), [choiceIdx]: optionId },
@@ -1436,6 +1442,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
   const [suggestedAlignment, setSuggestedAlignment] = useState(null);
 
   const answerQuiz = (answer) => {
+    haptic.trigger("light");
     const newAnswers = [...quizAnswers, answer];
     setQuizAnswers(newAnswers);
     if (newAnswers.length >= 2) {
@@ -1488,6 +1495,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
   }, [step]);
 
   const assignStat = (ability, val) => {
+    haptic.trigger("selection");
     const prev = assignedStats[ability];
     const newUnassigned =
       prev != null ? [...unassigned, prev] : [...unassigned];
@@ -1501,6 +1509,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
   };
 
   const rollStats = () => {
+    haptic.trigger("heavy");
     const roll4d6 = () => {
       const dice = Array.from({ length: 4 }, () => Math.floor(Math.random() * 6) + 1);
       dice.sort((a, b) => a - b);
@@ -1512,6 +1521,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
   };
 
   const resetToStandard = () => {
+    haptic.trigger("light");
     setUnassigned([...STANDARD_ARRAY]);
     setAssignedStats({});
   };
@@ -1519,6 +1529,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
   const clearStat = (ability) => {
     const val = assignedStats[ability];
     if (val == null) return;
+    haptic.trigger("light");
     setUnassigned((u) => [...u, val].sort((a, b) => b - a));
     setAssignedStats((a) => {
       const n = { ...a };
@@ -1547,6 +1558,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
         const pRaceImg = previewRace ? RACE_IMAGES[previewRace] : null;
 
         const openRacePreview = (id) => {
+          haptic.trigger("light");
           update("race", id);
           setPreviewRace(id);
         };
@@ -1719,6 +1731,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
         const selectedSkills = char.skills;
 
         const openPreview = (id) => {
+          haptic.trigger("light");
           if (id !== char.class) {
             // Switching class resets skills and equipment choices
             update("class", id);
@@ -1729,6 +1742,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
         };
 
         const toggleSkill = (skill) => {
+          haptic.trigger("light");
           if (selectedSkills.includes(skill)) {
             update("skills", selectedSkills.filter((s) => s !== skill));
           } else if (selectedSkills.length < pSkillsChoose) {
@@ -1936,6 +1950,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
         const pBgImg = previewBg ? BG_IMAGES[previewBg] : null;
 
         const openBgPreview = (id) => {
+          haptic.trigger("light");
           update("background", id);
           setPreviewBg(id);
         };
@@ -2124,7 +2139,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
               <span style={{ fontSize: 14, fontWeight: 600 }}>Starting Level</span>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <Ripple
-                  onClick={() => update("level", Math.max(1, char.level - 1))}
+                  onClick={() => { haptic.trigger("selection"); update("level", Math.max(1, char.level - 1)); }}
                   style={{
                     width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, borderRadius: 10,
                     display: "flex", alignItems: "center", justifyContent: "center",
@@ -2140,7 +2155,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                   {char.level}
                 </span>
                 <Ripple
-                  onClick={() => update("level", Math.min(20, char.level + 1))}
+                  onClick={() => { haptic.trigger("selection"); update("level", Math.min(20, char.level + 1)); }}
                   style={{
                     width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, borderRadius: 10,
                     display: "flex", alignItems: "center", justifyContent: "center",
@@ -2578,6 +2593,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
         );
 
         const toggleCantrip = (id) => {
+          haptic.trigger("light");
           if (char.cantrips.includes(id)) {
             update("cantrips", char.cantrips.filter((c) => c !== id));
           } else if (char.cantrips.length < slots.cantrips) {
@@ -2585,6 +2601,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
           }
         };
         const toggleSpell = (id) => {
+          haptic.trigger("light");
           if (char.spells.includes(id)) {
             update("spells", char.spells.filter((s) => s !== id));
           } else if (char.spells.length < slots.spells) {
@@ -2794,6 +2811,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
     else chars.push(charToSave);
     saveCharacters(chars);
     syncCharacterToParty(charToSave);
+    haptic.trigger("success");
     setEditing(false);
   };
 
@@ -3378,7 +3396,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
           <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 8, paddingBottom: 80 }}>
             {editing ? (
               <>
-                <Ripple onClick={() => setEditing(false)} style={{ ...styles.secondaryBtn, gap: 6 }}>
+                <Ripple onClick={() => { haptic.trigger("light"); setEditing(false); }} style={{ ...styles.secondaryBtn, gap: 6 }}>
                   <Icon name="close" size={16} /> Cancel
                 </Ripple>
                 <Ripple onClick={saveEdits} style={{ ...styles.primaryBtn, gap: 6 }}>
@@ -3387,7 +3405,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
               </>
             ) : (
               <>
-                <Ripple onClick={() => setEditing(true)} style={{ ...styles.secondaryBtn, gap: 6 }}>
+                <Ripple onClick={() => { haptic.trigger("light"); setEditing(true); }} style={{ ...styles.secondaryBtn, gap: 6 }}>
                   <Icon name="edit" size={16} /> Edit Character
                 </Ripple>
                 <Ripple onClick={() => onBack()} style={{ ...styles.primaryBtn, gap: 6 }}>
@@ -3408,7 +3426,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
           pointerEvents: "none",
         }}>
           <Ripple
-            onClick={() => setOpenPanel(openPanel === "inventory" ? null : "inventory")}
+            onClick={() => { haptic.trigger("medium"); setOpenPanel(openPanel === "inventory" ? null : "inventory"); }}
             style={{
               display: "flex", alignItems: "center", gap: 8,
               padding: "12px 24px", borderRadius: 24,
@@ -3422,7 +3440,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
             <Icon name="backpack" size={20} /> Inventory
           </Ripple>
           <Ripple
-            onClick={() => { setOpenPanel(openPanel === "spellbook" ? null : "spellbook"); setSpellFilter("my"); setSpellSearch(""); setSelectedSpell(null); }}
+            onClick={() => { haptic.trigger("medium"); setOpenPanel(openPanel === "spellbook" ? null : "spellbook"); setSpellFilter("my"); setSpellSearch(""); setSelectedSpell(null); }}
             style={{
               display: "flex", alignItems: "center", gap: 8,
               padding: "12px 24px", borderRadius: 24,
@@ -3947,7 +3965,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
           return (
             <Ripple
               key={s}
-              onClick={() => setStep(i)}
+              onClick={() => { haptic.trigger("selection"); setStep(i); }}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -4047,6 +4065,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                     saveCharacters(chars);
                     syncCharacterToParty(charToSave);
                     localStorage.removeItem(STORAGE_KEY);
+                    haptic.trigger("success");
                     setFinished(true);
                   }}
                   style={{
@@ -4262,6 +4281,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                 saveCharacters(chars);
                 syncCharacterToParty(charToSave);
                 localStorage.removeItem(STORAGE_KEY);
+                haptic.trigger("success");
                 setFinished(true);
               }}
               style={{
