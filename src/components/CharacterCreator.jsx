@@ -381,23 +381,34 @@ const CLASS_ICONS = {
   wizard: "auto_fix_high",
 };
 
+function useTooltipPos(ref, tooltipWidth = 280) {
+  const [pos, setPos] = useState({ x: 0, y: 0, flipped: false });
+  const calcPos = () => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const half = tooltipWidth / 2;
+    const clampedX = Math.max(half + 8, Math.min(cx, window.innerWidth - half - 8));
+    const spaceAbove = rect.top;
+    const flipped = spaceAbove < 200;
+    setPos({
+      x: clampedX,
+      y: flipped ? rect.bottom + 8 : rect.top - 8,
+      flipped,
+    });
+  };
+  return { pos, calcPos };
+}
+
 function TraitChip({ trait }) {
   const [hovered, setHovered] = useState(false);
-  const [pos, setPos] = useState({ x: 0, y: 0 });
   const ref = useRef(null);
-
-  const handleEnter = () => {
-    if (ref.current) {
-      const rect = ref.current.getBoundingClientRect();
-      setPos({ x: rect.left + rect.width / 2, y: rect.top });
-    }
-    setHovered(true);
-  };
+  const { pos, calcPos } = useTooltipPos(ref, 260);
 
   return (
     <span
       ref={ref}
-      onMouseEnter={handleEnter}
+      onMouseEnter={() => { calcPos(); setHovered(true); }}
       onMouseLeave={() => setHovered(false)}
       style={{ display: "inline" }}
     >
@@ -415,9 +426,9 @@ function TraitChip({ trait }) {
         <div
           style={{
             position: "fixed",
-            top: pos.y - 8,
+            top: pos.y,
             left: pos.x,
-            transform: "translate(-50%, -100%)",
+            transform: pos.flipped ? "translate(-50%, 0)" : "translate(-50%, -100%)",
             width: 260,
             padding: 12,
             borderRadius: 12,
@@ -428,23 +439,10 @@ function TraitChip({ trait }) {
             pointerEvents: "none",
           }}
         >
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: "var(--dm-primary)",
-              marginBottom: 4,
-            }}
-          >
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--dm-primary)", marginBottom: 4 }}>
             {trait.name}
           </div>
-          <div
-            style={{
-              fontSize: 12,
-              color: "var(--dm-text-secondary)",
-              lineHeight: 1.5,
-            }}
-          >
+          <div style={{ fontSize: 12, color: "var(--dm-text-secondary)", lineHeight: 1.5 }}>
             {trait.desc}
           </div>
         </div>
@@ -543,6 +541,139 @@ function RaceCard({ race, selected, onSelect }) {
   );
 }
 
+function ClassCard({ cls, selected, onSelect }) {
+  const [hovered, setHovered] = useState(false);
+  const ref = useRef(null);
+  const { pos, calcPos } = useTooltipPos(ref, 300);
+  const img = CLASS_IMAGES[cls.id];
+  const lvl1Features = cls.features?.filter((f) => f.level === 1).map((f) => f.name) || [];
+
+  return (
+    <div ref={ref} onMouseEnter={() => { calcPos(); setHovered(true); }} onMouseLeave={() => setHovered(false)} style={{ position: "relative" }}>
+      <Ripple
+        onClick={onSelect}
+        style={{
+          background: "var(--dm-surface)", borderRadius: 16, padding: 0, overflow: "hidden",
+          display: "flex", flexDirection: "column", position: "relative",
+          transition: "border-color 0.2s",
+          border: selected ? "2px solid var(--dm-primary)" : "1px solid var(--dm-outline-variant)",
+        }}
+      >
+        {img ? (
+          <div style={{ width: "100%", aspectRatio: "1", overflow: "hidden" }}>
+            <img src={img} alt={cls.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          </div>
+        ) : (
+          <div style={{ width: 52, height: 52, borderRadius: 16, background: "var(--dm-surface-bright)", display: "flex", alignItems: "center", justifyContent: "center", margin: "20px 20px 0" }}>
+            <Icon name={CLASS_ICONS[cls.id] || "person"} size={32} style={{ color: "var(--dm-primary)" }} />
+          </div>
+        )}
+        <div style={{ padding: "12px 20px 16px", borderRadius: 16, marginTop: -16, position: "relative", background: "var(--dm-surface)" }}>
+          <div style={{ fontSize: 16, fontWeight: 600 }}>{cls.name}</div>
+          <div style={{ fontSize: 13, color: "var(--dm-text-secondary)" }}>Hit Die: d{cls.hitDie}</div>
+          <div style={{ fontSize: 13, color: "var(--dm-text-secondary)" }}>Saves: {cls.savingThrows.join(", ")}</div>
+        </div>
+      </Ripple>
+      {hovered && (
+        <div style={{
+          position: "fixed", top: pos.y, left: pos.x,
+          transform: pos.flipped ? "translate(-50%, 0)" : "translate(-50%, -100%)",
+          width: 300, padding: 14, borderRadius: 12,
+          background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.5)", zIndex: 100, pointerEvents: "none",
+        }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--dm-primary)", marginBottom: 8 }}>{cls.name}</div>
+          <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 4 }}>
+            <span style={{ color: "var(--dm-text-muted)" }}>Hit Die: </span>d{cls.hitDie}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 4 }}>
+            <span style={{ color: "var(--dm-text-muted)" }}>Saving Throws: </span>{cls.savingThrows.join(", ")}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 4 }}>
+            <span style={{ color: "var(--dm-text-muted)" }}>Proficiencies: </span>{cls.proficiencies.join(", ")}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 4 }}>
+            <span style={{ color: "var(--dm-text-muted)" }}>Skills: </span>Choose {cls.skills.choose} from {cls.skills.from.join(", ")}
+          </div>
+          {cls.spellcasting && (
+            <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 4 }}>
+              <span style={{ color: "var(--dm-text-muted)" }}>Spellcasting: </span>{cls.spellcasting.ability} (from level {cls.spellcasting.level})
+            </div>
+          )}
+          {lvl1Features.length > 0 && (
+            <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 4 }}>
+              <span style={{ color: "var(--dm-text-muted)" }}>Level 1 Features: </span>{lvl1Features.join(", ")}
+            </div>
+          )}
+          {cls.subclasses?.length > 0 && (
+            <div style={{ fontSize: 12, color: "var(--dm-text)" }}>
+              <span style={{ color: "var(--dm-text-muted)" }}>Subclasses: </span>{cls.subclasses.join(", ")}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EquipmentCard({ eq, selected, disabled, onToggle }) {
+  const [hovered, setHovered] = useState(false);
+  const ref = useRef(null);
+  const { pos, calcPos } = useTooltipPos(ref, 280);
+
+  return (
+    <div ref={ref} onMouseEnter={() => { calcPos(); setHovered(true); }} onMouseLeave={() => setHovered(false)} style={{ position: "relative" }}>
+      <Ripple
+        onClick={onToggle}
+        style={{
+          background: selected ? "var(--dm-primary-container)" : "var(--dm-surface)",
+          borderRadius: 16, padding: 16,
+          display: "flex", flexDirection: "row", gap: 12, alignItems: "center",
+          transition: "border-color 0.2s, background 0.2s",
+          border: selected ? "2px solid var(--dm-primary)" : "1px solid var(--dm-outline-variant)",
+          opacity: disabled && !selected ? 0.5 : 1,
+          cursor: disabled && !selected ? "default" : "pointer",
+        }}
+      >
+        <Icon name={eq.icon} size={22} style={{ color: selected ? "var(--dm-primary)" : "var(--dm-text-muted)", flexShrink: 0 }} />
+        <span style={{ fontSize: 14, fontWeight: 500, color: selected ? "var(--dm-on-primary-container)" : "var(--dm-text)" }}>
+          {eq.name}
+        </span>
+        {selected && <Icon name="check_circle" size={18} style={{ color: "var(--dm-primary)", marginLeft: "auto" }} />}
+      </Ripple>
+      {hovered && (
+        <div style={{
+          position: "fixed", top: pos.y, left: pos.x,
+          transform: pos.flipped ? "translate(-50%, 0)" : "translate(-50%, -100%)",
+          width: 280, padding: 14, borderRadius: 12,
+          background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.5)", zIndex: 100, pointerEvents: "none",
+        }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--dm-primary)", marginBottom: 6 }}>{eq.name}</div>
+          {eq.damage && (
+            <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 4 }}>
+              <span style={{ color: "var(--dm-text-muted)" }}>Damage: </span>{eq.damage}
+            </div>
+          )}
+          {eq.properties && (
+            <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 4 }}>
+              <span style={{ color: "var(--dm-text-muted)" }}>Properties: </span>{eq.properties}
+            </div>
+          )}
+          {eq.weight && (
+            <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 4 }}>
+              <span style={{ color: "var(--dm-text-muted)" }}>Weight: </span>{eq.weight}
+            </div>
+          )}
+          {eq.desc && (
+            <div style={{ fontSize: 12, color: "var(--dm-text-secondary)", lineHeight: 1.5, marginTop: 6 }}>{eq.desc}</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CharacterCreator({ onBack }) {
   const [step, setStep] = useState(0);
   const [char, setChar] = useState({
@@ -592,48 +723,47 @@ function CharacterCreator({ onBack }) {
     const profs = classData.proficiencies || [];
     if (profs.some((p) => p.includes("Martial"))) {
       opts.push(
-        { id: "longsword", name: "Longsword", icon: "swords" },
-        { id: "greataxe", name: "Greataxe", icon: "swords" },
-        { id: "greatsword", name: "Greatsword", icon: "swords" },
+        { id: "longsword", name: "Longsword", icon: "swords", damage: "1d8 slashing", weight: "3 lb", properties: "Versatile (1d10)", desc: "A classic one-handed blade favoured by knights and seasoned warriors." },
+        { id: "greataxe", name: "Greataxe", icon: "swords", damage: "1d12 slashing", weight: "7 lb", properties: "Heavy, Two-Handed", desc: "A massive axe that cleaves through armor and bone alike." },
+        { id: "greatsword", name: "Greatsword", icon: "swords", damage: "2d6 slashing", weight: "6 lb", properties: "Heavy, Two-Handed", desc: "A towering blade requiring both hands and great strength to wield." },
       );
     }
     if (profs.some((p) => p.includes("Simple"))) {
       opts.push(
-        { id: "handaxe", name: "Handaxe (x2)", icon: "carpenter" },
-        { id: "javelin", name: "Javelin (x4)", icon: "arrow_upward" },
-        { id: "mace", name: "Mace", icon: "hardware" },
-        { id: "quarterstaff", name: "Quarterstaff", icon: "pen_size_1" },
-        { id: "dagger", name: "Dagger", icon: "cut" },
+        { id: "handaxe", name: "Handaxe (x2)", icon: "carpenter", damage: "1d6 slashing", weight: "2 lb each", properties: "Light, Thrown (20/60)", desc: "Small throwing axes, deadly at close range and in melee." },
+        { id: "javelin", name: "Javelin (x4)", icon: "arrow_upward", damage: "1d6 piercing", weight: "2 lb each", properties: "Thrown (30/120)", desc: "Light spears designed for throwing at enemies from a distance." },
+        { id: "mace", name: "Mace", icon: "hardware", damage: "1d6 bludgeoning", weight: "4 lb", properties: "Simple", desc: "A heavy metal head on a sturdy shaft, effective against armored foes." },
+        { id: "quarterstaff", name: "Quarterstaff", icon: "pen_size_1", damage: "1d6 bludgeoning", weight: "4 lb", properties: "Versatile (1d8)", desc: "A simple wooden staff, versatile in combat and useful as a walking stick." },
+        { id: "dagger", name: "Dagger", icon: "cut", damage: "1d4 piercing", weight: "1 lb", properties: "Finesse, Light, Thrown (20/60)", desc: "A small, concealable blade useful for close combat and throwing." },
       );
     }
     if (profs.some((p) => p.includes("Shield"))) {
-      opts.push({ id: "shield", name: "Shield (+2 AC)", icon: "shield" });
+      opts.push({ id: "shield", name: "Shield (+2 AC)", icon: "shield", weight: "6 lb", properties: "+2 Armor Class", desc: "A sturdy shield strapped to the arm, providing solid defense in battle." });
     }
     if (classData.spellcasting) {
       opts.push(
-        { id: "component-pouch", name: "Component Pouch", icon: "backpack" },
-        { id: "arcane-focus", name: "Arcane Focus", icon: "auto_fix_high" },
+        { id: "component-pouch", name: "Component Pouch", icon: "backpack", weight: "2 lb", properties: "Spellcasting Focus", desc: "A small belt pouch containing the material components for your spells." },
+        { id: "arcane-focus", name: "Arcane Focus", icon: "auto_fix_high", weight: "1 lb", properties: "Spellcasting Focus", desc: "A crystal, orb, or wand that channels arcane energy for spellcasting." },
       );
     }
     opts.push(
-      { id: "explorers-pack", name: "Explorer's Pack", icon: "backpack" },
-      { id: "dungeoneers-pack", name: "Dungeoneer's Pack", icon: "backpack" },
+      { id: "explorers-pack", name: "Explorer's Pack", icon: "backpack", weight: "59 lb", properties: "Adventuring Gear", desc: "Backpack, bedroll, mess kit, tinderbox, 10 torches, 10 days rations, waterskin, and 50 ft of rope." },
+      { id: "dungeoneers-pack", name: "Dungeoneer's Pack", icon: "backpack", weight: "61.5 lb", properties: "Adventuring Gear", desc: "Backpack, crowbar, hammer, 10 pitons, 10 torches, tinderbox, 10 days rations, waterskin, and 50 ft of rope." },
     );
     if (profs.some((p) => p.includes("Light Armor"))) {
       opts.push({
-        id: "leather-armor",
-        name: "Leather Armor",
-        icon: "checkroom",
+        id: "leather-armor", name: "Leather Armor", icon: "checkroom",
+        weight: "10 lb", properties: "AC 11 + Dex modifier", desc: "Supple leather molded to the wearer's body, offering light protection without hindering movement.",
       });
     }
     if (profs.some((p) => p.includes("Medium Armor"))) {
       opts.push(
-        { id: "scale-mail", name: "Scale Mail", icon: "checkroom" },
-        { id: "chain-shirt", name: "Chain Shirt", icon: "checkroom" },
+        { id: "scale-mail", name: "Scale Mail", icon: "checkroom", weight: "45 lb", properties: "AC 14 + Dex (max 2), Stealth Disadvantage", desc: "A coat of overlapping metal scales, offering solid protection at the cost of stealth." },
+        { id: "chain-shirt", name: "Chain Shirt", icon: "checkroom", weight: "20 lb", properties: "AC 13 + Dex (max 2)", desc: "Interlocking metal rings worn under clothing, balancing protection and mobility." },
       );
     }
     if (profs.some((p) => p.includes("Heavy Armor") || p === "All Armor")) {
-      opts.push({ id: "chain-mail", name: "Chain Mail", icon: "checkroom" });
+      opts.push({ id: "chain-mail", name: "Chain Mail", icon: "checkroom", weight: "55 lb", properties: "AC 16, Stealth Disadvantage, Str 13 required", desc: "Heavy interlocking metal rings covering the entire body, offering excellent protection." });
     }
     return opts;
   }, [classData]);
@@ -764,78 +894,14 @@ function CharacterCreator({ onBack }) {
               Your class defines your abilities, skills, and role in the party.
             </p>
             <div style={styles.cardGrid}>
-              {classesData.map((cls) => {
-                const img = CLASS_IMAGES[cls.id];
-                return (
-                  <Ripple
-                    key={cls.id}
-                    onClick={() => selectAndAdvance("class", cls.id)}
-                    style={{
-                      background: "var(--dm-surface)",
-                      borderRadius: 16,
-                      padding: 0,
-                      overflow: "hidden",
-                      display: "flex",
-                      flexDirection: "column",
-                      position: "relative",
-                      transition: "border-color 0.2s",
-                      border:
-                        char.class === cls.id
-                          ? "2px solid var(--dm-primary)"
-                          : "1px solid var(--dm-outline-variant)",
-                    }}
-                  >
-                    {img ? (
-                      <div
-                        style={{
-                          width: "100%",
-                          aspectRatio: "1",
-                          overflow: "hidden",
-                        }}
-                      >
-                        <img
-                          src={img}
-                          alt={cls.name}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            display: "block",
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <div
-                        style={{
-                          ...styles.cardIconWrap,
-                          margin: "20px 20px 0",
-                        }}
-                      >
-                        <Icon
-                          name={CLASS_ICONS[cls.id] || "person"}
-                          size={32}
-                          style={{ color: "var(--dm-primary)" }}
-                        />
-                      </div>
-                    )}
-                    <div
-                      style={{
-                        padding: "12px 20px 16px",
-                        borderRadius: 16,
-                        marginTop: -16,
-                        position: "relative",
-                        background: "var(--dm-surface)",
-                      }}
-                    >
-                      <div style={styles.cardName}>{cls.name}</div>
-                      <div style={styles.cardMeta}>Hit Die: d{cls.hitDie}</div>
-                      <div style={styles.cardMeta}>
-                        Saves: {cls.savingThrows.join(", ")}
-                      </div>
-                    </div>
-                  </Ripple>
-                );
-              })}
+              {classesData.map((cls) => (
+                <ClassCard
+                  key={cls.id}
+                  cls={cls}
+                  selected={char.class === cls.id}
+                  onSelect={() => selectAndAdvance("class", cls.id)}
+                />
+              ))}
             </div>
           </div>
         );
@@ -1259,60 +1325,15 @@ function CharacterCreator({ onBack }) {
               {char.equipment.length} / {MAX_EQUIPMENT} items selected
             </div>
             <div style={styles.cardGrid}>
-              {equipmentOptions.map((eq) => {
-                const selected = char.equipment.includes(eq.id);
-                return (
-                  <Ripple
-                    key={eq.id}
-                    onClick={() => toggleEquip(eq.id)}
-                    style={{
-                      ...styles.card,
-                      padding: 16,
-                      flexDirection: "row",
-                      gap: 12,
-                      alignItems: "center",
-                      border: selected
-                        ? "2px solid var(--dm-primary)"
-                        : "1px solid var(--dm-outline-variant)",
-                      background: selected
-                        ? "var(--dm-primary-container)"
-                        : "var(--dm-surface)",
-                    }}
-                  >
-                    <Icon
-                      name={eq.icon}
-                      size={22}
-                      style={{
-                        color: selected
-                          ? "var(--dm-primary)"
-                          : "var(--dm-text-muted)",
-                        flexShrink: 0,
-                      }}
-                    />
-                    <span
-                      style={{
-                        fontSize: 14,
-                        fontWeight: 500,
-                        color: selected
-                          ? "var(--dm-on-primary-container)"
-                          : "var(--dm-text)",
-                      }}
-                    >
-                      {eq.name}
-                    </span>
-                    {selected && (
-                      <Icon
-                        name="check_circle"
-                        size={18}
-                        style={{
-                          color: "var(--dm-primary)",
-                          marginLeft: "auto",
-                        }}
-                      />
-                    )}
-                  </Ripple>
-                );
-              })}
+              {equipmentOptions.map((eq) => (
+                <EquipmentCard
+                  key={eq.id}
+                  eq={eq}
+                  selected={char.equipment.includes(eq.id)}
+                  disabled={char.equipment.length >= MAX_EQUIPMENT}
+                  onToggle={() => toggleEquip(eq.id)}
+                />
+              ))}
             </div>
           </div>
         );
