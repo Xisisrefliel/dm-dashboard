@@ -23,6 +23,7 @@ import DiceRoller from "./DiceRoller.jsx";
 import InitTracker from "./InitTracker.jsx";
 import DocPreviewCard from "./DocPreviewCard.jsx";
 import PinnedPanel from "./PinnedPanel.jsx";
+import PartyPanel from "./PartyPanel.jsx";
 
 function DMDashboard({ campaign, onBack }) {
   const palette = useMemo(() => derivePalette(campaign.color || "#9fd494"), [campaign.color]);
@@ -1405,6 +1406,7 @@ function DMDashboard({ campaign, onBack }) {
                 }}
               >
                 {[
+                  { key: "party", label: "Party", icon: "groups" },
                   { key: "pinned", label: "Pinned", icon: "push_pin" },
                   { key: "dice", label: "Dice", icon: "casino" },
                   { key: "init", label: "Initiative", icon: "swords" },
@@ -1452,6 +1454,12 @@ function DMDashboard({ campaign, onBack }) {
                       setPinned((p) => p.filter((x) => x.id !== id))
                     }
                     onSelect={selectDoc}
+                  />
+                )}
+                {rightTab === "party" && (
+                  <PartyPanel
+                    campaignId={campaign.id}
+                    onAddToInit={addToInitiative}
                   />
                 )}
                 {rightTab === "dice" && <DiceRoller />}

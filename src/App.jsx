@@ -3,6 +3,7 @@ import AuthScreen from "./components/AuthScreen.jsx";
 import CampaignHome from "./components/CampaignHome.jsx";
 import DMDashboard from "./components/DMDashboard.jsx";
 import CharacterCreator from "./components/CharacterCreator.jsx";
+import InviteJoin from "./components/InviteJoin.jsx";
 
 function getSlugFromURL() {
   const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
@@ -13,10 +14,17 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [campaigns, setCampaigns] = useState([]);
   const [activeCampaign, setActiveCampaign] = useState(null);
-  const [page, setPage] = useState(
-    getSlugFromURL() === "character-creator" ? "character-creator" :
-    getSlugFromURL() === "characters" ? "characters" : null
-  );
+  const [page, setPage] = useState(() => {
+    const slug = getSlugFromURL();
+    if (slug === "character-creator") return "character-creator";
+    if (slug === "characters") return "characters";
+    if (slug?.startsWith("invite/")) return "invite";
+    return null;
+  });
+  const [inviteToken] = useState(() => {
+    const slug = getSlugFromURL();
+    return slug?.startsWith("invite/") ? slug.replace("invite/", "") : null;
+  });
   const [editCharacterId, setEditCharacterId] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -40,7 +48,7 @@ export default function App() {
         const list = await res.json();
         setCampaigns(list);
 
-        if (slug && slug !== "character-creator" && slug !== "characters") {
+        if (slug && slug !== "character-creator" && slug !== "characters" && !slug.startsWith("invite/")) {
           const campaign = await fetchCampaignBySlug(slug);
           if (campaign) {
             setActiveCampaign(campaign);
@@ -56,9 +64,9 @@ export default function App() {
   useEffect(() => {
     const onPopState = async () => {
       const slug = getSlugFromURL();
-      if (slug === "character-creator" || slug === "characters") {
+      if (slug === "character-creator" || slug === "characters" || slug?.startsWith("invite/")) {
         setActiveCampaign(null);
-        setPage(slug);
+        setPage(slug?.startsWith("invite/") ? "invite" : slug);
         return;
       }
       setPage(null);
@@ -163,6 +171,18 @@ export default function App() {
 
   if (!user) {
     return <AuthScreen onAuth={handleAuth} />;
+  }
+
+  if (page === "invite" && inviteToken) {
+    return (
+      <InviteJoin
+        token={inviteToken}
+        onBack={() => {
+          setPage(null);
+          window.history.pushState(null, "", "/");
+        }}
+      />
+    );
   }
 
   if (page === "character-creator") {

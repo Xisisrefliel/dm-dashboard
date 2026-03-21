@@ -95,11 +95,37 @@ export async function migrate() {
     ALTER TABLE docs ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES docs(id) ON DELETE CASCADE
   `;
 
+  await sql`
+    CREATE TABLE IF NOT EXISTS invite_tokens (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      campaign_id UUID NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+      token TEXT UNIQUE NOT NULL,
+      created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      expires_at TIMESTAMPTZ,
+      max_uses INTEGER DEFAULT NULL,
+      use_count INTEGER DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS campaign_members (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      campaign_id UUID NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      character_data JSONB NOT NULL,
+      joined_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(campaign_id, user_id)
+    )
+  `;
+
   await sql`CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_campaigns_user ON campaigns(user_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_docs_campaign ON docs(campaign_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_docs_category ON docs(campaign_id, category_key)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_invite_tokens_token ON invite_tokens(token)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_campaign_members_campaign ON campaign_members(campaign_id)`;
 
   console.log("✅ Database migrated");
 }
