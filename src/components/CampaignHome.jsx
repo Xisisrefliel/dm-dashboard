@@ -1,13 +1,24 @@
 import { useState } from "react";
 import Icon from "./ui/Icon.jsx";
 import Ripple from "./ui/Ripple.jsx";
+import ContextMenu from "./ui/ContextMenu.jsx";
 import { CAMPAIGN_COLORS } from "../data/sampleCampaign.js";
 
-function CampaignHome({ campaigns, onSelect, onCreate, user, onLogout, onCharacterCreator }) {
+function CampaignHome({ campaigns, onSelect, onCreate, onDelete, onRename, user, onLogout, onCharacterCreator }) {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newColor, setNewColor] = useState(CAMPAIGN_COLORS[0]);
+
+  // Context menu
+  const [ctxMenu, setCtxMenu] = useState(null);
+
+  // Rename modal
+  const [renaming, setRenaming] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
+
+  // Delete confirm
+  const [deleting, setDeleting] = useState(null);
 
   const handleCreate = () => {
     if (!newName.trim()) return;
@@ -34,6 +45,8 @@ function CampaignHome({ campaigns, onSelect, onCreate, user, onLogout, onCharact
         "--dm-primary": "#9fd494",
         "--dm-outline": "#8c9386",
         "--dm-outline-variant": "#424940",
+        "--dm-surface-brighter": "#353d35",
+        "--dm-error": "#ffb4ab",
         fontFamily: "'Inter',system-ui,-apple-system,sans-serif",
         height: "100vh",
         background: "var(--dm-bg)",
@@ -115,8 +128,8 @@ function CampaignHome({ campaigns, onSelect, onCreate, user, onLogout, onCharact
               fontWeight: 500,
             }}
           >
-            <Icon name="person_add" size={20} />
-            Character Creator
+            <Icon name="group" size={20} />
+            My Characters
           </Ripple>
         </div>
       </div>
@@ -134,6 +147,10 @@ function CampaignHome({ campaigns, onSelect, onCreate, user, onLogout, onCharact
           <Ripple
             key={c.id}
             onClick={() => onSelect(c.id, c.slug)}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setCtxMenu({ x: e.clientX, y: e.clientY, campaign: c });
+            }}
             style={{
               background: "var(--dm-surface)",
               borderRadius: 20,
@@ -358,6 +375,198 @@ function CampaignHome({ campaigns, onSelect, onCreate, user, onLogout, onCharact
                   Cancel
                 </Ripple>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {ctxMenu && (
+        <ContextMenu
+          x={ctxMenu.x}
+          y={ctxMenu.y}
+          onClose={() => setCtxMenu(null)}
+          items={[
+            {
+              icon: "edit",
+              label: "Rename",
+              action: () => {
+                setRenameValue(ctxMenu.campaign.name);
+                setRenaming(ctxMenu.campaign);
+              },
+            },
+            { divider: true },
+            {
+              icon: "delete",
+              label: "Delete",
+              danger: true,
+              action: () => {
+                setDeleting(ctxMenu.campaign);
+              },
+            },
+          ]}
+        />
+      )}
+      {renaming && (
+        <div
+          onClick={() => setRenaming(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "var(--dm-surface)",
+              borderRadius: 28,
+              padding: 32,
+              width: 400,
+              maxWidth: "90vw",
+              border: "1px solid var(--dm-outline-variant)",
+              boxShadow: "0 16px 48px rgba(0,0,0,0.4)",
+              animation: "m3pop 0.2s cubic-bezier(0.2,0,0,1)",
+            }}
+          >
+            <h2
+              style={{
+                fontSize: 22,
+                fontWeight: 600,
+                margin: "0 0 20px",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Rename Campaign
+            </h2>
+            <input
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && renameValue.trim()) {
+                  onRename(renaming.id, renameValue.trim());
+                  setRenaming(null);
+                }
+              }}
+              className="m3input"
+              style={{ fontSize: 16, width: "100%", marginBottom: 16 }}
+              autoFocus
+            />
+            <div style={{ display: "flex", gap: 8 }}>
+              <Ripple
+                onClick={() => {
+                  if (renameValue.trim()) {
+                    onRename(renaming.id, renameValue.trim());
+                    setRenaming(null);
+                  }
+                }}
+                style={{
+                  padding: "10px 24px",
+                  borderRadius: 20,
+                  background: "var(--dm-primary)",
+                  color: "#0a3806",
+                  fontWeight: 500,
+                  fontSize: 14,
+                }}
+              >
+                Save
+              </Ripple>
+              <Ripple
+                onClick={() => setRenaming(null)}
+                style={{
+                  padding: "10px 24px",
+                  borderRadius: 20,
+                  border: "1px solid var(--dm-outline)",
+                  color: "var(--dm-primary)",
+                  fontWeight: 500,
+                  fontSize: 14,
+                }}
+              >
+                Cancel
+              </Ripple>
+            </div>
+          </div>
+        </div>
+      )}
+      {deleting && (
+        <div
+          onClick={() => setDeleting(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "var(--dm-surface)",
+              borderRadius: 28,
+              padding: 32,
+              width: 400,
+              maxWidth: "90vw",
+              border: "1px solid var(--dm-outline-variant)",
+              boxShadow: "0 16px 48px rgba(0,0,0,0.4)",
+              animation: "m3pop 0.2s cubic-bezier(0.2,0,0,1)",
+            }}
+          >
+            <h2
+              style={{
+                fontSize: 22,
+                fontWeight: 600,
+                margin: "0 0 12px",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Delete Campaign
+            </h2>
+            <p
+              style={{
+                fontSize: 14,
+                color: "var(--dm-text-secondary)",
+                lineHeight: 1.6,
+                margin: "0 0 20px",
+              }}
+            >
+              Are you sure you want to delete <strong style={{ color: "var(--dm-text)" }}>{deleting.name}</strong>? All
+              documents and categories in this campaign will be permanently removed. This cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Ripple
+                onClick={() => {
+                  onDelete(deleting.id);
+                  setDeleting(null);
+                }}
+                style={{
+                  padding: "10px 24px",
+                  borderRadius: 20,
+                  background: "#d4908a",
+                  color: "#3b0a06",
+                  fontWeight: 500,
+                  fontSize: 14,
+                }}
+              >
+                Delete
+              </Ripple>
+              <Ripple
+                onClick={() => setDeleting(null)}
+                style={{
+                  padding: "10px 24px",
+                  borderRadius: 20,
+                  border: "1px solid var(--dm-outline)",
+                  color: "var(--dm-primary)",
+                  fontWeight: 500,
+                  fontSize: 14,
+                }}
+              >
+                Cancel
+              </Ripple>
             </div>
           </div>
         </div>

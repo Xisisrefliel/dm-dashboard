@@ -13,7 +13,11 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [campaigns, setCampaigns] = useState([]);
   const [activeCampaign, setActiveCampaign] = useState(null);
-  const [page, setPage] = useState(getSlugFromURL() === "character-creator" ? "character-creator" : null);
+  const [page, setPage] = useState(
+    getSlugFromURL() === "character-creator" ? "character-creator" :
+    getSlugFromURL() === "characters" ? "characters" : null
+  );
+  const [editCharacterId, setEditCharacterId] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchCampaignBySlug = async (slug) => {
@@ -36,7 +40,7 @@ export default function App() {
         const list = await res.json();
         setCampaigns(list);
 
-        if (slug && slug !== "character-creator") {
+        if (slug && slug !== "character-creator" && slug !== "characters") {
           const campaign = await fetchCampaignBySlug(slug);
           if (campaign) {
             setActiveCampaign(campaign);
@@ -52,9 +56,9 @@ export default function App() {
   useEffect(() => {
     const onPopState = async () => {
       const slug = getSlugFromURL();
-      if (slug === "character-creator") {
+      if (slug === "character-creator" || slug === "characters") {
         setActiveCampaign(null);
-        setPage("character-creator");
+        setPage(slug);
         return;
       }
       setPage(null);
@@ -112,6 +116,25 @@ export default function App() {
     setActiveCampaign(campaign);
   };
 
+  const handleDelete = async (id) => {
+    const res = await fetch(`/api/campaigns/${id}`, { method: "DELETE" });
+    if (!res.ok) return;
+    setCampaigns((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const handleRename = async (id, name) => {
+    const res = await fetch(`/api/campaigns/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    if (!res.ok) return;
+    const updated = await res.json();
+    setCampaigns((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, name: updated.name, slug: updated.slug } : c)),
+    );
+  };
+
   const handleBack = () => {
     setActiveCampaign(null);
     window.history.pushState(null, "", "/");
@@ -145,9 +168,33 @@ export default function App() {
   if (page === "character-creator") {
     return (
       <CharacterCreator
+        editId={editCharacterId}
+        onBack={() => {
+          setEditCharacterId(null);
+          setPage("characters");
+          window.history.pushState(null, "", "/characters");
+        }}
+      />
+    );
+  }
+
+  if (page === "characters") {
+    return (
+      <CharacterCreator
+        listMode
         onBack={() => {
           setPage(null);
           window.history.pushState(null, "", "/");
+        }}
+        onNewCharacter={() => {
+          setEditCharacterId(null);
+          setPage("character-creator");
+          window.history.pushState(null, "", "/character-creator");
+        }}
+        onEditCharacter={(id) => {
+          setEditCharacterId(id);
+          setPage("character-creator");
+          window.history.pushState(null, "", "/character-creator");
         }}
       />
     );
@@ -168,11 +215,13 @@ export default function App() {
       campaigns={campaigns}
       onSelect={handleSelect}
       onCreate={handleCreate}
+      onDelete={handleDelete}
+      onRename={handleRename}
       user={user}
       onLogout={handleLogout}
       onCharacterCreator={() => {
-        setPage("character-creator");
-        window.history.pushState(null, "", "/character-creator");
+        setPage("characters");
+        window.history.pushState(null, "", "/characters");
       }}
     />
   );

@@ -10,14 +10,14 @@ function slugify(name: string): string {
     .replace(/^-|-$/g, "") || "campaign";
 }
 
-async function uniqueSlug(userId: string, name: string): Promise<string> {
+async function uniqueSlug(userId: string, name: string, excludeId?: string): Promise<string> {
   const base = slugify(name);
   let slug = base;
   let i = 2;
   while (true) {
-    const [existing] = await sql`
-      SELECT id FROM campaigns WHERE user_id = ${userId} AND slug = ${slug}
-    `;
+    const [existing] = excludeId
+      ? await sql`SELECT id FROM campaigns WHERE user_id = ${userId} AND slug = ${slug} AND id != ${excludeId}`
+      : await sql`SELECT id FROM campaigns WHERE user_id = ${userId} AND slug = ${slug}`;
     if (!existing) return slug;
     slug = `${base}-${i++}`;
   }
@@ -162,9 +162,14 @@ export const campaignRoutes = {
       const { id } = (req as any).params;
       const { name, description, color } = await req.json();
 
+      const newSlug = name?.trim()
+        ? await uniqueSlug(user.id, name.trim(), id)
+        : null;
+
       const [campaign] = await sql`
         UPDATE campaigns
         SET name = COALESCE(${name ?? null}, name),
+            slug = COALESCE(${newSlug}, slug),
             description = COALESCE(${description ?? null}, description),
             color = COALESCE(${color ?? null}, color),
             updated_at = NOW()

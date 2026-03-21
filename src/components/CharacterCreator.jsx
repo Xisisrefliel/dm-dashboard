@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import racesData from "../data/srd-races.json";
 import classesData from "../data/srd-classes.json";
 import allSpellsData from "../data/srd-spells.json";
@@ -395,6 +395,49 @@ const CLASS_ICONS = {
   wizard: "auto_fix_high",
 };
 
+const CLASS_DESCRIPTIONS = {
+  barbarian: "Fierce warriors who channel primal rage to overpower enemies with raw strength and relentless fury.",
+  bard: "Masters of artistry and enchantment who weave magic into performances to inspire allies and confound enemies.",
+  cleric: "Divine healers and warriors who channel their deity's power to mend wounds, smite foes, and bolster allies.",
+  druid: "Guardians of the natural world who wield elemental magic and can shapeshift into beasts.",
+  fighter: "Versatile combatants trained in every form of warfare, mastering weapons, armor, and battlefield tactics.",
+  monk: "Disciplined martial artists who harness the power of body and spirit to strike with supernatural speed.",
+  paladin: "Holy knights bound by sacred oaths, combining divine magic with martial prowess to vanquish evil.",
+  ranger: "Skilled hunters and trackers who blend combat expertise with nature magic to protect the wild.",
+  rogue: "Cunning tricksters who rely on stealth, guile, and precision strikes to outmaneuver their foes.",
+  sorcerer: "Innate spellcasters whose magic flows from a powerful bloodline or cosmic event within their very being.",
+  warlock: "Seekers of forbidden knowledge who forge pacts with otherworldly patrons in exchange for arcane power.",
+  wizard: "Scholarly mages who study the arcane arts, mastering a vast repertoire of spells through rigorous research.",
+};
+
+const SKILL_DESCRIPTIONS = {
+  "Acrobatics": "Covers stunts like diving, rolling, and flipping. Used when attempting to stay on your feet or perform acrobatic feats (DEX).",
+  "Animal Handling": "Calm a domesticated animal, keep a mount from getting spooked, or intuit an animal's intentions (WIS).",
+  "Arcana": "Recall lore about spells, magic items, eldritch symbols, magical traditions, and the planes of existence (INT).",
+  "Athletics": "Covers climbing, jumping, and swimming. Used for difficult physical feats of strength (STR).",
+  "Deception": "Convincingly hide the truth through words or actions, whether through fast-talking, disguise, or misleading others (CHA).",
+  "History": "Recall lore about historical events, legendary people, ancient kingdoms, past disputes, recent wars, and lost civilizations (INT).",
+  "Insight": "Determine the true intentions of a creature, such as detecting a lie or predicting someone's next move (WIS).",
+  "Intimidation": "Influence someone through overt threats, hostile actions, or physical violence to get what you want (CHA).",
+  "Investigation": "Look for clues and make deductions. Deduce the location of a hidden object or determine what kind of weapon dealt a wound (INT).",
+  "Medicine": "Stabilize a dying companion, diagnose an illness, or determine cause of death (WIS).",
+  "Nature": "Recall lore about terrain, plants, animals, weather, and natural cycles (INT).",
+  "Perception": "Spot, hear, or detect the presence of something. Measures general awareness of your surroundings (WIS).",
+  "Performance": "Delight an audience with music, dance, acting, storytelling, or some other form of entertainment (CHA).",
+  "Persuasion": "Influence someone with tact, social graces, or good nature. Used for acting in good faith (CHA).",
+  "Religion": "Recall lore about deities, rites and prayers, religious hierarchies, holy symbols, and the practices of secret cults (INT).",
+  "Sleight of Hand": "Conceal an object, plant something on someone, or perform legerdemain and manual trickery (DEX).",
+  "Stealth": "Attempt to conceal yourself from enemies, slink past guards, or slip away without being noticed (DEX).",
+  "Survival": "Follow tracks, hunt wild game, guide your group through wastelands, predict the weather, or avoid quicksand (WIS).",
+};
+
+const CLASS_PRIMARY_ABILITY = {
+  barbarian: "Strength", bard: "Charisma", cleric: "Wisdom", druid: "Wisdom",
+  fighter: "Strength or Dexterity", monk: "Dexterity & Wisdom", paladin: "Strength & Charisma",
+  ranger: "Dexterity & Wisdom", rogue: "Dexterity", sorcerer: "Charisma",
+  warlock: "Charisma", wizard: "Intelligence",
+};
+
 function useTooltipPos(ref, tooltipWidth = 280) {
   const tooltipRef = useRef(null);
   const [style, setStyle] = useState({ position: "fixed", visibility: "hidden", top: 0, left: 0 });
@@ -415,16 +458,20 @@ function useTooltipPos(ref, tooltipWidth = 280) {
       const visibleBottom = Math.min(vh, rect.bottom);
       const cx = rect.left + rect.width / 2;
 
-      // Try above
-      if (visibleTop - 8 - ttH > 0) {
+      const spaceAbove = visibleTop - 8;
+      const spaceBelow = vh - visibleBottom - 8;
+      const fitsAbove = spaceAbove >= ttH;
+      const fitsBelow = spaceBelow >= ttH;
+
+      // Prefer whichever side has more room; if both fit, pick the one with more space
+      if (fitsAbove && (!fitsBelow || spaceAbove >= spaceBelow)) {
         setStyle({
           position: "fixed",
           top: visibleTop - 8 - ttH,
           left: Math.max(8, Math.min(cx - half, vw - tooltipWidth - 8)),
           width: tooltipWidth,
         });
-      // Try below
-      } else if (visibleBottom + 8 + ttH < vh) {
+      } else if (fitsBelow) {
         setStyle({
           position: "fixed",
           top: visibleBottom + 8,
@@ -462,7 +509,7 @@ function useTooltipPos(ref, tooltipWidth = 280) {
   return { tooltipRef, style, calcPos };
 }
 
-function TraitChip({ trait }) {
+function TraitChip({ trait, asButton }) {
   const [hovered, setHovered] = useState(false);
   const ref = useRef(null);
   const { tooltipRef, style, calcPos } = useTooltipPos(ref, 260);
@@ -472,10 +519,19 @@ function TraitChip({ trait }) {
       ref={ref}
       onMouseEnter={() => { setHovered(true); calcPos(); }}
       onMouseLeave={() => setHovered(false)}
-      style={{ display: "inline" }}
+      style={{ display: "inline-block" }}
     >
       <span
-        style={{
+        style={asButton ? {
+          fontSize: 12, fontWeight: 500,
+          color: "var(--dm-primary)",
+          cursor: "default",
+          padding: "5px 12px", borderRadius: 16,
+          border: "1px solid var(--dm-outline-variant)",
+          background: hovered ? "var(--dm-surface-bright)" : "transparent",
+          display: "inline-block",
+          transition: "background 0.15s",
+        } : {
           fontSize: 12,
           color: "var(--dm-primary)",
           cursor: "default",
@@ -727,20 +783,182 @@ function EquipmentCard({ eq, selected, disabled, onToggle }) {
   );
 }
 
-function CharacterCreator({ onBack }) {
-  const [step, setStep] = useState(0);
-  const [char, setChar] = useState({
-    name: "",
-    race: null,
-    class: null,
-    background: null,
-    level: 1,
-    stats: { STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 10, CHA: 8 },
-    alignment: null,
-    equipment: [],
-    cantrips: [],
-    spells: [],
-  });
+const STORAGE_KEY = "dm-dashboard-character-creator";
+const CHARACTERS_KEY = "dm-dashboard-characters";
+
+function loadSavedState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch {}
+  return null;
+}
+
+function loadCharacters() {
+  try {
+    const saved = localStorage.getItem(CHARACTERS_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch {}
+  return [];
+}
+
+function saveCharacters(chars) {
+  localStorage.setItem(CHARACTERS_KEY, JSON.stringify(chars));
+}
+
+const EMPTY_CHAR = {
+  name: "",
+  race: null,
+  class: null,
+  background: null,
+  level: 1,
+  stats: { STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 10, CHA: 8 },
+  alignment: null,
+  equipment: [],
+  cantrips: [],
+  spells: [],
+  skills: [],
+};
+
+// Character list screen
+function CharacterList({ onBack, onNewCharacter, onEditCharacter }) {
+  const [characters, setCharacters] = useState(() => loadCharacters());
+
+  const deleteCharacter = (id) => {
+    const updated = characters.filter((c) => c.id !== id);
+    setCharacters(updated);
+    saveCharacters(updated);
+  };
+
+  return (
+    <div style={{
+      "--dm-bg": "#121214", "--dm-surface": "#1c1c1f", "--dm-surface-bright": "#26262a",
+      "--dm-text": "#e2e2e6", "--dm-text-secondary": "#c2c2c8", "--dm-text-muted": "#8a8a92",
+      "--dm-primary": "#9fa8da", "--dm-on-primary": "#0d0f2b",
+      "--dm-outline-variant": "#38383e", "--dm-primary-container": "#1a237e",
+      "--dm-on-primary-container": "#c5cae9", "--dm-secondary-container": "#2c2c3a",
+      fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+      minHeight: "100vh", background: "var(--dm-bg)", color: "var(--dm-text)",
+    }}>
+      <div style={{
+        height: 64, minHeight: 64, display: "flex", alignItems: "center",
+        padding: "0 16px", gap: 12, borderBottom: "1px solid var(--dm-outline-variant)",
+      }}>
+        <Ripple onClick={onBack} style={{
+          width: 40, height: 40, borderRadius: 20,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <Icon name="arrow_back" />
+        </Ripple>
+        <Icon name="group" size={24} filled style={{ color: "var(--dm-primary)" }} />
+        <span style={{ fontSize: 16, fontWeight: 600 }}>My Characters</span>
+        <div style={{ flex: 1 }} />
+        <Ripple onClick={() => {
+          localStorage.removeItem(STORAGE_KEY);
+          onNewCharacter();
+        }} style={{
+          display: "inline-flex", alignItems: "center", gap: 6,
+          padding: "8px 20px", borderRadius: 20,
+          background: "var(--dm-primary)", color: "var(--dm-on-primary)",
+          fontWeight: 500, fontSize: 14,
+        }}>
+          <Icon name="add" size={18} /> New Character
+        </Ripple>
+      </div>
+
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 20px" }}>
+        {characters.length === 0 ? (
+          <div style={{
+            textAlign: "center", padding: "60px 20px",
+            color: "var(--dm-text-muted)",
+          }}>
+            <Icon name="person_off" size={56} style={{ marginBottom: 16, opacity: 0.4 }} />
+            <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No characters yet</div>
+            <div style={{ fontSize: 14, marginBottom: 24 }}>Create your first adventurer to get started.</div>
+            <Ripple onClick={() => {
+              localStorage.removeItem(STORAGE_KEY);
+              onNewCharacter();
+            }} style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              padding: "10px 24px", borderRadius: 20,
+              background: "var(--dm-primary)", color: "var(--dm-on-primary)",
+              fontWeight: 500, fontSize: 14,
+            }}>
+              <Icon name="add" size={18} /> Create Character
+            </Ripple>
+          </div>
+        ) : (
+          <div style={{
+            display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16,
+          }}>
+            {characters.map((ch) => {
+              const rd = racesData.find((r) => r.id === ch.race);
+              const cd = classesData.find((c) => c.id === ch.class);
+              const img = ch.class ? CLASS_IMAGES[ch.class] : (ch.race ? RACE_IMAGES[ch.race] : null);
+              return (
+                <div key={ch.id} style={{
+                  background: "var(--dm-surface)", borderRadius: 16, overflow: "hidden",
+                  border: "1px solid var(--dm-outline-variant)", position: "relative",
+                }}>
+                  <Ripple onClick={() => onEditCharacter(ch.id)} style={{
+                    display: "flex", flexDirection: "column", width: "100%",
+                  }}>
+                    {img && (
+                      <div style={{ width: "100%", height: 160, overflow: "hidden" }}>
+                        <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />
+                      </div>
+                    )}
+                    <div style={{ padding: "14px 18px" }}>
+                      <div style={{ fontSize: 18, fontWeight: 700 }}>{ch.name || "Unnamed"}</div>
+                      <div style={{ fontSize: 13, color: "var(--dm-text-secondary)", marginTop: 2 }}>
+                        Level {ch.level} {rd?.name || ""} {cd?.name || ""}
+                      </div>
+                    </div>
+                  </Ripple>
+                  <Ripple
+                    onClick={() => deleteCharacter(ch.id)}
+                    style={{
+                      position: "absolute", top: 8, right: 8,
+                      width: 32, height: 32, borderRadius: 16,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "rgba(0,0,0,0.6)", border: "1px solid var(--dm-outline-variant)",
+                    }}
+                  >
+                    <Icon name="delete" size={16} style={{ color: "var(--dm-error, #ffb4ab)" }} />
+                  </Ripple>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, editId }) {
+  // If list mode, show the character list
+  if (listMode) {
+    return <CharacterList onBack={onBack} onNewCharacter={onNewCharacter} onEditCharacter={onEditCharacter} />;
+  }
+
+  // Load existing character if editing
+  const editChar = useMemo(() => {
+    if (!editId) return null;
+    const chars = loadCharacters();
+    return chars.find((c) => c.id === editId) || null;
+  }, [editId]);
+
+  const saved = useMemo(() => editChar ? null : loadSavedState(), [editId]);
+  const [step, setStep] = useState(editChar ? 6 : (saved?.step ?? 0));
+  const [finished, setFinished] = useState(!!editChar || (saved?.finished ?? false));
+  const [char, setChar] = useState(editChar || saved?.char || { ...EMPTY_CHAR });
+  const [previewClass, setPreviewClass] = useState(null);
+  const classCarouselRef = useRef(null);
+  const [previewRace, setPreviewRace] = useState(null);
+  const raceCarouselRef = useRef(null);
+  const [previewBg, setPreviewBg] = useState(null);
+  const bgCarouselRef = useRef(null);
 
   const update = (key, val) => setChar((c) => ({ ...c, [key]: val }));
 
@@ -766,7 +984,11 @@ function CharacterCreator({ onBack }) {
   const stepComplete = (i) => {
     switch (i) {
       case 0: return char.race != null;
-      case 1: return char.class != null;
+      case 1: {
+        if (!char.class) return false;
+        const cd = classesData.find((c) => c.id === char.class);
+        return cd ? char.skills.length === cd.skills.choose : false;
+      }
       case 2: return char.background != null;
       case 3: return Object.keys(assignedStats).length === 6;
       case 4: return char.alignment != null;
@@ -879,8 +1101,15 @@ function CharacterCreator({ onBack }) {
   };
 
   // Stat assignment
-  const [unassigned, setUnassigned] = useState([...STANDARD_ARRAY]);
-  const [assignedStats, setAssignedStats] = useState({});
+  const [unassigned, setUnassigned] = useState(editChar?.assignedStats ? [] : (saved?.unassigned ?? [...STANDARD_ARRAY]));
+  const [assignedStats, setAssignedStats] = useState(editChar?.assignedStats || saved?.assignedStats || {});
+
+  // Persist to localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      step, char, assignedStats, unassigned, finished,
+    }));
+  }, [step, char, assignedStats, unassigned, finished]);
 
   const assignStat = (ability, val) => {
     const prev = assignedStats[ability];
@@ -928,9 +1157,151 @@ function CharacterCreator({ onBack }) {
     return b ? b.bonus : 0;
   };
 
+  // Restore preview when navigating back to a step with a selection
+  useEffect(() => {
+    if (step === 0 && char.race) setPreviewRace(char.race);
+    if (step === 1 && char.class) setPreviewClass(char.class);
+    if (step === 2 && char.background) setPreviewBg(char.background);
+  }, [step]);
+
   const renderStep = () => {
     switch (step) {
-      case 0: // Race
+      case 0: { // Race
+        const pRace = previewRace ? racesData.find((r) => r.id === previewRace) : null;
+        const pRaceImg = previewRace ? RACE_IMAGES[previewRace] : null;
+
+        const openRacePreview = (id) => {
+          update("race", id);
+          setPreviewRace(id);
+        };
+
+        if (pRace) {
+          return (
+            <div>
+              <h2 style={styles.stepTitle}>Choose your Race</h2>
+
+              {/* Detail card */}
+              <div style={{
+                display: "flex", gap: 0, background: "var(--dm-surface)", borderRadius: 20,
+                overflow: "hidden", border: "1px solid var(--dm-outline-variant)", marginBottom: 24,
+                height: 420,
+              }}>
+                {pRaceImg && (
+                  <div style={{ width: 240, minWidth: 240, flexShrink: 0, position: "relative" }}>
+                    <img src={pRaceImg} alt={pRace.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />
+                  </div>
+                )}
+
+                <div style={{ flex: 1, padding: "20px 28px", minWidth: 260, overflowY: "auto" }}>
+                  <h3 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 8px", letterSpacing: "0.02em", textTransform: "uppercase" }}>
+                    {pRace.name}
+                  </h3>
+                  <p style={{ fontSize: 13, color: "var(--dm-text-secondary)", lineHeight: 1.5, margin: "0 0 12px" }}>
+                    {pRace.age}
+                  </p>
+
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 20px", fontSize: 13, marginBottom: 12 }}>
+                    <div>
+                      <span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Ability Bonuses: </span>
+                      {pRace.abilityBonuses.map((b) => `${ABILITY_NAMES[b.ability] || b.ability} +${b.bonus}`).join(", ")}
+                    </div>
+                    <div>
+                      <span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Speed: </span>
+                      {pRace.speed} ft
+                    </div>
+                    <div>
+                      <span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Size: </span>
+                      {pRace.size}
+                    </div>
+                    <div>
+                      <span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Languages: </span>
+                      {pRace.languages.join(", ")}
+                    </div>
+                  </div>
+
+                  {/* Traits */}
+                  {pRace.traits?.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", fontSize: 13 }}>
+                      <span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Racial Traits:</span>
+                      {pRace.traits.map((t) => (
+                        <TraitChip key={t.name} trait={t} asButton />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+                    <Ripple onClick={() => setPreviewRace(null)} style={{ ...styles.secondaryBtn, gap: 6 }}>
+                      <Icon name="arrow_back" size={16} /> Back
+                    </Ripple>
+                    <Ripple onClick={() => { setPreviewRace(null); next(); }} style={{ ...styles.primaryBtn, gap: 6 }}>
+                      <Icon name="check" size={16} /> Confirm {pRace.name}
+                    </Ripple>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mini race carousel */}
+              <div style={{ position: "relative" }}>
+                <Ripple
+                  onClick={() => raceCarouselRef.current?.scrollBy({ left: -240, behavior: "smooth" })}
+                  style={{
+                    position: "absolute", left: -16, top: "50%", transform: "translateY(-50%)", zIndex: 2,
+                    width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center",
+                    background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                  }}
+                >
+                  <Icon name="chevron_left" size={22} />
+                </Ripple>
+                <div
+                  ref={raceCarouselRef}
+                  style={{
+                    display: "flex", gap: 10, overflowX: "auto", paddingBottom: 8,
+                    scrollbarWidth: "none", msOverflowStyle: "none",
+                    scrollSnapType: "x mandatory",
+                  }}
+                >
+                  {racesData.map((race) => {
+                    const img = RACE_IMAGES[race.id];
+                    const active = race.id === previewRace;
+                    return (
+                      <Ripple
+                        key={race.id}
+                        onClick={() => openRacePreview(race.id)}
+                        style={{
+                          flexShrink: 0, width: 100, borderRadius: 12, overflow: "hidden",
+                          border: active ? "2px solid var(--dm-primary)" : "1px solid var(--dm-outline-variant)",
+                          background: "var(--dm-surface)", display: "flex", flexDirection: "column",
+                          opacity: active ? 1 : 0.7, transition: "all 0.15s",
+                          scrollSnapAlign: "start",
+                        }}
+                      >
+                        {img && <img src={img} alt={race.name} style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />}
+                        <div style={{ padding: "6px 0", textAlign: "center", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                          {race.name}
+                        </div>
+                      </Ripple>
+                    );
+                  })}
+                </div>
+                <Ripple
+                  onClick={() => raceCarouselRef.current?.scrollBy({ left: 240, behavior: "smooth" })}
+                  style={{
+                    position: "absolute", right: -16, top: "50%", transform: "translateY(-50%)", zIndex: 2,
+                    width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center",
+                    background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                  }}
+                >
+                  <Icon name="chevron_right" size={22} />
+                </Ripple>
+              </div>
+            </div>
+          );
+        }
+
+        // Grid view
         return (
           <div>
             <h2 style={styles.stepTitle}>Choose your Race</h2>
@@ -944,14 +1315,201 @@ function CharacterCreator({ onBack }) {
                   key={race.id}
                   race={race}
                   selected={char.race === race.id}
-                  onSelect={() => selectAndAdvance("race", race.id)}
+                  onSelect={() => openRacePreview(race.id)}
                 />
               ))}
             </div>
           </div>
         );
+      }
 
-      case 1: // Class
+      case 1: { // Class
+        const pCls = previewClass ? classesData.find((c) => c.id === previewClass) : null;
+        const pImg = previewClass ? CLASS_IMAGES[previewClass] : null;
+        const pSkillsFrom = pCls ? pCls.skills.from : [];
+        const pSkillsChoose = pCls ? pCls.skills.choose : 0;
+        const selectedSkills = char.skills;
+
+        const openPreview = (id) => {
+          if (id !== char.class) {
+            // Switching class resets skills
+            update("class", id);
+            update("skills", []);
+          }
+          setPreviewClass(id);
+        };
+
+        const toggleSkill = (skill) => {
+          if (selectedSkills.includes(skill)) {
+            update("skills", selectedSkills.filter((s) => s !== skill));
+          } else if (selectedSkills.length < pSkillsChoose) {
+            update("skills", [...selectedSkills, skill]);
+          }
+        };
+
+        const confirmClass = () => {
+          setPreviewClass(null);
+          next();
+        };
+
+        if (pCls) {
+          // Detail view
+          return (
+            <div>
+              <h2 style={styles.stepTitle}>Choose your Class</h2>
+
+              {/* Detail card */}
+              <div style={{
+                display: "flex", gap: 0, background: "var(--dm-surface)", borderRadius: 20,
+                overflow: "hidden", border: "1px solid var(--dm-outline-variant)", marginBottom: 24,
+                flexWrap: "wrap",
+              }}>
+                {/* Image */}
+                {pImg && (
+                  <div style={{ width: 280, minWidth: 280, flexShrink: 0 }}>
+                    <img src={pImg} alt={pCls.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  </div>
+                )}
+
+                {/* Info */}
+                <div style={{ flex: 1, padding: "28px 32px", minWidth: 260 }}>
+                  <h3 style={{ fontSize: 28, fontWeight: 700, margin: "0 0 12px", letterSpacing: "0.02em", textTransform: "uppercase" }}>
+                    {pCls.name}
+                  </h3>
+                  <p style={{ fontSize: 15, color: "var(--dm-text-secondary)", lineHeight: 1.6, margin: "0 0 20px" }}>
+                    {CLASS_DESCRIPTIONS[pCls.id]}
+                  </p>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ fontSize: 14 }}>
+                      <span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Primary Ability: </span>
+                      {CLASS_PRIMARY_ABILITY[pCls.id]}
+                    </div>
+                    <div style={{ fontSize: 14 }}>
+                      <span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Hit Die: </span>
+                      d{pCls.hitDie}
+                    </div>
+                    <div style={{ fontSize: 14 }}>
+                      <span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Saving Throws: </span>
+                      {pCls.savingThrows.map((s) => ABILITY_NAMES[s] || s).join(", ")}
+                    </div>
+
+                    {/* Skill selection */}
+                    <div style={{ fontSize: 14, marginTop: 8 }}>
+                      <span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>
+                        Skills <span style={{ fontWeight: 400, color: "var(--dm-text-muted)" }}>(choose {pSkillsChoose})</span>:
+                      </span>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                        {pSkillsFrom.map((skill) => {
+                          const picked = selectedSkills.includes(skill);
+                          const disabled = !picked && selectedSkills.length >= pSkillsChoose;
+                          return (
+                            <Ripple
+                              key={skill}
+                              onClick={() => toggleSkill(skill)}
+                              style={{
+                                padding: "6px 14px", borderRadius: 20, fontSize: 13, fontWeight: 500,
+                                background: picked ? "var(--dm-primary)" : "var(--dm-surface-bright)",
+                                color: picked ? "var(--dm-on-primary)" : disabled ? "var(--dm-text-muted)" : "var(--dm-text)",
+                                border: picked ? "1px solid var(--dm-primary)" : "1px solid var(--dm-outline-variant)",
+                                opacity: disabled ? 0.5 : 1,
+                                transition: "all 0.15s",
+                              }}
+                            >
+                              {picked && <Icon name="check" size={14} style={{ marginRight: 4, verticalAlign: "middle" }} />}
+                              {skill}
+                            </Ripple>
+                          );
+                        })}
+                      </div>
+                      {selectedSkills.length > 0 && selectedSkills.length < pSkillsChoose && (
+                        <div style={{ fontSize: 12, color: "var(--dm-text-muted)", marginTop: 6 }}>
+                          {pSkillsChoose - selectedSkills.length} more to choose
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
+                    <Ripple onClick={() => setPreviewClass(null)} style={{ ...styles.secondaryBtn, gap: 6 }}>
+                      <Icon name="arrow_back" size={16} /> Back
+                    </Ripple>
+                    <Ripple
+                      onClick={selectedSkills.length >= pSkillsChoose ? confirmClass : undefined}
+                      style={{
+                        ...styles.primaryBtn, gap: 6,
+                        opacity: selectedSkills.length >= pSkillsChoose ? 1 : 0.4,
+                        cursor: selectedSkills.length >= pSkillsChoose ? "pointer" : "default",
+                      }}
+                    >
+                      <Icon name="check" size={16} /> Confirm {pCls.name}
+                    </Ripple>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mini class carousel */}
+              <div style={{ position: "relative" }}>
+                <Ripple
+                  onClick={() => classCarouselRef.current?.scrollBy({ left: -240, behavior: "smooth" })}
+                  style={{
+                    position: "absolute", left: -16, top: "50%", transform: "translateY(-50%)", zIndex: 2,
+                    width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center",
+                    background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                  }}
+                >
+                  <Icon name="chevron_left" size={22} />
+                </Ripple>
+                <div
+                  ref={classCarouselRef}
+                  style={{
+                    display: "flex", gap: 10, overflowX: "auto", paddingBottom: 8,
+                    scrollbarWidth: "none", msOverflowStyle: "none",
+                    scrollSnapType: "x mandatory",
+                  }}
+                >
+                  {classesData.map((cls) => {
+                    const img = CLASS_IMAGES[cls.id];
+                    const active = cls.id === previewClass;
+                    return (
+                      <Ripple
+                        key={cls.id}
+                        onClick={() => openPreview(cls.id)}
+                        style={{
+                          flexShrink: 0, width: 100, borderRadius: 12, overflow: "hidden",
+                          border: active ? "2px solid var(--dm-primary)" : "1px solid var(--dm-outline-variant)",
+                          background: "var(--dm-surface)", display: "flex", flexDirection: "column",
+                          opacity: active ? 1 : 0.7, transition: "all 0.15s",
+                          scrollSnapAlign: "start",
+                        }}
+                      >
+                        {img && <img src={img} alt={cls.name} style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />}
+                        <div style={{ padding: "6px 0", textAlign: "center", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                          {cls.name}
+                        </div>
+                      </Ripple>
+                    );
+                  })}
+                </div>
+                <Ripple
+                  onClick={() => classCarouselRef.current?.scrollBy({ left: 240, behavior: "smooth" })}
+                  style={{
+                    position: "absolute", right: -16, top: "50%", transform: "translateY(-50%)", zIndex: 2,
+                    width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center",
+                    background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                  }}
+                >
+                  <Icon name="chevron_right" size={22} />
+                </Ripple>
+              </div>
+            </div>
+          );
+        }
+
+        // Grid view (no class previewed)
         return (
           <div>
             <h2 style={styles.stepTitle}>Choose your Class</h2>
@@ -964,20 +1522,139 @@ function CharacterCreator({ onBack }) {
                   key={cls.id}
                   cls={cls}
                   selected={char.class === cls.id}
-                  onSelect={() => selectAndAdvance("class", cls.id)}
+                  onSelect={() => openPreview(cls.id)}
                 />
               ))}
             </div>
           </div>
         );
+      }
 
-      case 2: // Background
+      case 2: { // Background
+        const pBg = previewBg ? BACKGROUNDS.find((b) => b.id === previewBg) : null;
+        const pBgImg = previewBg ? BG_IMAGES[previewBg] : null;
+
+        const openBgPreview = (id) => {
+          update("background", id);
+          setPreviewBg(id);
+        };
+
+        if (pBg) {
+          return (
+            <div>
+              <h2 style={styles.stepTitle}>Choose your Background</h2>
+
+              {/* Detail card */}
+              <div style={{
+                display: "flex", gap: 0, background: "var(--dm-surface)", borderRadius: 20,
+                overflow: "hidden", border: "1px solid var(--dm-outline-variant)", marginBottom: 24,
+                height: 360,
+              }}>
+                {pBgImg && (
+                  <div style={{ width: 240, minWidth: 240, flexShrink: 0 }}>
+                    <img src={pBgImg} alt={pBg.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />
+                  </div>
+                )}
+
+                <div style={{ flex: 1, padding: "20px 28px", minWidth: 260, overflowY: "auto" }}>
+                  <h3 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 8px", letterSpacing: "0.02em", textTransform: "uppercase" }}>
+                    {pBg.name}
+                  </h3>
+                  <p style={{ fontSize: 14, color: "var(--dm-text-secondary)", lineHeight: 1.6, margin: "0 0 16px" }}>
+                    {pBg.desc}
+                  </p>
+
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", fontSize: 13 }}>
+                    <span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Skill Proficiencies:</span>
+                    {pBg.skills.map((skill) => (
+                      <TraitChip key={skill} trait={{ name: skill, desc: SKILL_DESCRIPTIONS[skill] || skill }} asButton />
+                    ))}
+                  </div>
+
+                  {/* Action buttons */}
+                  <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+                    <Ripple onClick={() => setPreviewBg(null)} style={{ ...styles.secondaryBtn, gap: 6 }}>
+                      <Icon name="arrow_back" size={16} /> Back
+                    </Ripple>
+                    <Ripple onClick={() => { setPreviewBg(null); next(); }} style={{ ...styles.primaryBtn, gap: 6 }}>
+                      <Icon name="check" size={16} /> Confirm {pBg.name}
+                    </Ripple>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mini background carousel */}
+              <div style={{ position: "relative" }}>
+                <Ripple
+                  onClick={() => bgCarouselRef.current?.scrollBy({ left: -240, behavior: "smooth" })}
+                  style={{
+                    position: "absolute", left: -16, top: "50%", transform: "translateY(-50%)", zIndex: 2,
+                    width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center",
+                    background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                  }}
+                >
+                  <Icon name="chevron_left" size={22} />
+                </Ripple>
+                <div
+                  ref={bgCarouselRef}
+                  style={{
+                    display: "flex", gap: 10, overflowX: "auto", paddingBottom: 8,
+                    scrollbarWidth: "none", msOverflowStyle: "none",
+                    scrollSnapType: "x mandatory",
+                  }}
+                >
+                  {BACKGROUNDS.map((bg) => {
+                    const img = BG_IMAGES[bg.id];
+                    const active = bg.id === previewBg;
+                    return (
+                      <Ripple
+                        key={bg.id}
+                        onClick={() => openBgPreview(bg.id)}
+                        style={{
+                          flexShrink: 0, width: 100, borderRadius: 12, overflow: "hidden",
+                          border: active ? "2px solid var(--dm-primary)" : "1px solid var(--dm-outline-variant)",
+                          background: "var(--dm-surface)", display: "flex", flexDirection: "column",
+                          opacity: active ? 1 : 0.7, transition: "all 0.15s",
+                          scrollSnapAlign: "start",
+                        }}
+                      >
+                        {img ? (
+                          <img src={img} alt={bg.name} style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />
+                        ) : (
+                          <div style={{ width: "100%", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--dm-surface-bright)" }}>
+                            <Icon name={bg.icon} size={28} style={{ color: "var(--dm-primary)" }} />
+                          </div>
+                        )}
+                        <div style={{ padding: "6px 0", textAlign: "center", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>
+                          {bg.name}
+                        </div>
+                      </Ripple>
+                    );
+                  })}
+                </div>
+                <Ripple
+                  onClick={() => bgCarouselRef.current?.scrollBy({ left: 240, behavior: "smooth" })}
+                  style={{
+                    position: "absolute", right: -16, top: "50%", transform: "translateY(-50%)", zIndex: 2,
+                    width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center",
+                    background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                  }}
+                >
+                  <Icon name="chevron_right" size={22} />
+                </Ripple>
+              </div>
+            </div>
+          );
+        }
+
+        // Grid view
         return (
           <div>
             <h2 style={styles.stepTitle}>Choose your Background</h2>
             <p style={styles.stepDesc}>
-              Your background reveals where you came from and your place in the
-              world.
+              Your background reveals where you came from and your place in the world.
             </p>
             <div style={styles.cardGrid}>
               {BACKGROUNDS.map((bg) => {
@@ -985,78 +1662,27 @@ function CharacterCreator({ onBack }) {
                 return (
                   <Ripple
                     key={bg.id}
-                    onClick={() => selectAndAdvance("background", bg.id)}
+                    onClick={() => openBgPreview(bg.id)}
                     style={{
-                      background: "var(--dm-surface)",
-                      borderRadius: 16,
-                      padding: 0,
-                      overflow: "hidden",
-                      display: "flex",
-                      flexDirection: "column",
-                      position: "relative",
+                      background: "var(--dm-surface)", borderRadius: 16, padding: 0, overflow: "hidden",
+                      display: "flex", flexDirection: "column", position: "relative",
                       transition: "border-color 0.2s",
-                      border:
-                        char.background === bg.id
-                          ? "2px solid var(--dm-primary)"
-                          : "1px solid var(--dm-outline-variant)",
+                      border: char.background === bg.id ? "2px solid var(--dm-primary)" : "1px solid var(--dm-outline-variant)",
                     }}
                   >
                     {img ? (
-                      <div
-                        style={{
-                          width: "100%",
-                          aspectRatio: "1",
-                          overflow: "hidden",
-                        }}
-                      >
-                        <img
-                          src={img}
-                          alt={bg.name}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            display: "block",
-                          }}
-                        />
+                      <div style={{ width: "100%", aspectRatio: "1", overflow: "hidden" }}>
+                        <img src={img} alt={bg.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                       </div>
                     ) : (
-                      <div
-                        style={{
-                          ...styles.cardIconWrap,
-                          margin: "20px 20px 0",
-                        }}
-                      >
-                        <Icon
-                          name={bg.icon}
-                          size={32}
-                          style={{ color: "var(--dm-primary)" }}
-                        />
+                      <div style={{ ...styles.cardIconWrap, margin: "20px 20px 0" }}>
+                        <Icon name={bg.icon} size={32} style={{ color: "var(--dm-primary)" }} />
                       </div>
                     )}
-                    <div
-                      style={{
-                        padding: "12px 20px 16px",
-                        borderRadius: 16,
-                        marginTop: -16,
-                        position: "relative",
-                        background: "var(--dm-surface)",
-                      }}
-                    >
+                    <div style={{ padding: "12px 20px 16px", borderRadius: 16, marginTop: -16, position: "relative", background: "var(--dm-surface)" }}>
                       <div style={styles.cardName}>{bg.name}</div>
-                      <div style={{ ...styles.cardMeta, marginBottom: 6 }}>
-                        {bg.skills.join(", ")}
-                      </div>
-                      <div
-                        style={{
-                          ...styles.cardMeta,
-                          fontSize: 12,
-                          lineHeight: 1.4,
-                          opacity: 0.7,
-                        }}
-                      >
-                        {bg.desc}
-                      </div>
+                      <div style={{ ...styles.cardMeta, marginBottom: 6 }}>{bg.skills.join(", ")}</div>
+                      <div style={{ ...styles.cardMeta, fontSize: 12, lineHeight: 1.4, opacity: 0.7 }}>{bg.desc}</div>
                     </div>
                   </Ripple>
                 );
@@ -1064,6 +1690,7 @@ function CharacterCreator({ onBack }) {
             </div>
           </div>
         );
+      }
 
       case 3: // Stats
         return (
@@ -1344,7 +1971,7 @@ function CharacterCreator({ onBack }) {
                 </div>
                 <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
                   <Ripple
-                    onClick={() => selectAndAdvance("alignment", suggested.id)}
+                    onClick={() => { selectAndAdvance("alignment", suggested.id); next(); }}
                     style={{ ...styles.primaryBtn, gap: 6 }}
                   >
                     <Icon name="check" size={18} /> Accept {suggested.short}
@@ -1372,7 +1999,7 @@ function CharacterCreator({ onBack }) {
               {ALIGNMENTS.map((al) => (
                 <Ripple
                   key={al.id}
-                  onClick={() => selectAndAdvance("alignment", al.id)}
+                  onClick={() => { selectAndAdvance("alignment", al.id); next(); }}
                   style={{
                     background:
                       char.alignment === al.id
@@ -1636,6 +2263,237 @@ function CharacterCreator({ onBack }) {
   const bgData = BACKGROUNDS.find((b) => b.id === char.background);
   const alData = ALIGNMENTS.find((a) => a.id === char.alignment);
 
+  // Toggle body scroll for the finished character sheet
+  useEffect(() => {
+    if (finished) {
+      document.body.style.overflow = "auto";
+      return () => { document.body.style.overflow = ""; };
+    }
+  }, [finished]);
+
+  if (finished) {
+    const rImg = char.race ? RACE_IMAGES[char.race] : null;
+    const cImg = char.class ? CLASS_IMAGES[char.class] : null;
+    const hp = classData ? classData.hitDie + (char.level - 1) * (Math.floor(classData.hitDie / 2) + 1) : 0;
+    const profBonus = Math.ceil(char.level / 4) + 1;
+
+    return (
+      <div style={{ ...styles.root, height: "auto", minHeight: "100vh", overflow: "visible" }}>
+        <div style={styles.topBar}>
+          <Ripple onClick={onBack} style={styles.backBtn}>
+            <Icon name="arrow_back" />
+          </Ripple>
+          <Icon name="shield_with_house" size={24} filled style={{ color: "var(--dm-primary)" }} />
+          <span style={{ fontSize: 16, fontWeight: 600 }}>Character Sheet</span>
+        </div>
+
+        <div style={{ maxWidth: 800, margin: "0 auto", padding: "24px 20px" }}>
+          {/* Hero section */}
+          <div style={{
+            display: "flex", gap: 0, background: "var(--dm-surface)", borderRadius: 20,
+            overflow: "hidden", border: "1px solid var(--dm-outline-variant)", marginBottom: 24,
+          }}>
+            {(cImg || rImg) && (
+              <div style={{ width: 240, minWidth: 240, flexShrink: 0 }}>
+                <img src={cImg || rImg} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />
+              </div>
+            )}
+            <div style={{ flex: 1, padding: "24px 28px" }}>
+              <h2 style={{ fontSize: 32, fontWeight: 700, margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                {char.name || "Unnamed Hero"}
+              </h2>
+              <div style={{ fontSize: 15, color: "var(--dm-text-secondary)", marginBottom: 16 }}>
+                Level {char.level} {raceData?.name} {classData?.name}
+                {bgData && ` · ${bgData.name}`}
+              </div>
+
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 24px", fontSize: 14 }}>
+                <div><span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>HP: </span>{hp}</div>
+                <div><span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Hit Die: </span>d{classData?.hitDie}</div>
+                <div><span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Proficiency: </span>+{profBonus}</div>
+                <div><span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Speed: </span>{raceData?.speed} ft</div>
+                {alData && <div><span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Alignment: </span>{alData.name}</div>}
+              </div>
+            </div>
+          </div>
+
+          {/* Ability Scores */}
+          <div style={{
+            display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, marginBottom: 24,
+          }}>
+            {ABILITIES.map((ab) => {
+              const base = assignedStats[ab] ?? 10;
+              const racial = getRacialBonus(ab);
+              const total = base + racial;
+              const mod = Math.floor((total - 10) / 2);
+              return (
+                <div key={ab} style={{
+                  background: "var(--dm-surface)", borderRadius: 16, padding: 16, textAlign: "center",
+                  border: "1px solid var(--dm-outline-variant)",
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--dm-text-muted)", letterSpacing: 1, marginBottom: 4 }}>{ab}</div>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: "var(--dm-primary)" }}>{total}</div>
+                  <div style={{ fontSize: 13, color: "var(--dm-text-secondary)", marginTop: 2 }}>
+                    {mod >= 0 ? "+" : ""}{mod}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Skills & Proficiencies */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
+            {/* Skills */}
+            <div style={{
+              background: "var(--dm-surface)", borderRadius: 16, padding: 20,
+              border: "1px solid var(--dm-outline-variant)",
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--dm-text-muted)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>
+                Skill Proficiencies
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {[...char.skills, ...(bgData?.skills || [])].map((skill) => (
+                  <span key={skill} style={{
+                    padding: "5px 12px", borderRadius: 16, fontSize: 12, fontWeight: 500,
+                    background: "var(--dm-surface-bright)", border: "1px solid var(--dm-outline-variant)",
+                    color: "var(--dm-primary)",
+                  }}>
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Saving Throws */}
+            <div style={{
+              background: "var(--dm-surface)", borderRadius: 16, padding: 20,
+              border: "1px solid var(--dm-outline-variant)",
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--dm-text-muted)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>
+                Saving Throws
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {(classData?.savingThrows || []).map((st) => (
+                  <span key={st} style={{
+                    padding: "5px 12px", borderRadius: 16, fontSize: 12, fontWeight: 500,
+                    background: "var(--dm-surface-bright)", border: "1px solid var(--dm-outline-variant)",
+                    color: "var(--dm-primary)",
+                  }}>
+                    {ABILITY_NAMES[st] || st}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Equipment */}
+          {char.equipment.length > 0 && (
+            <div style={{
+              background: "var(--dm-surface)", borderRadius: 16, padding: 20, marginBottom: 24,
+              border: "1px solid var(--dm-outline-variant)",
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--dm-text-muted)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>
+                Equipment
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {char.equipment.map((id) => {
+                  const eq = equipmentOptions.find((e) => e.id === id);
+                  return eq ? (
+                    <span key={id} style={{
+                      padding: "6px 14px", borderRadius: 16, fontSize: 13,
+                      background: "var(--dm-surface-bright)", border: "1px solid var(--dm-outline-variant)",
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                    }}>
+                      <Icon name={eq.icon} size={16} style={{ color: "var(--dm-primary)" }} />
+                      {eq.name}
+                    </span>
+                  ) : null;
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Spells */}
+          {(char.cantrips.length > 0 || char.spells.length > 0) && (
+            <div style={{
+              background: "var(--dm-surface)", borderRadius: 16, padding: 20, marginBottom: 24,
+              border: "1px solid var(--dm-outline-variant)",
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--dm-text-muted)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>
+                Spells
+              </div>
+              {char.cantrips.length > 0 && (
+                <div style={{ marginBottom: char.spells.length > 0 ? 12 : 0 }}>
+                  <div style={{ fontSize: 12, color: "var(--dm-text-muted)", marginBottom: 6 }}>Cantrips</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {char.cantrips.map((id) => {
+                      const sp = allSpellsData.find((s) => s.id === id);
+                      return sp ? (
+                        <span key={id} style={{
+                          padding: "5px 12px", borderRadius: 16, fontSize: 12,
+                          background: "var(--dm-surface-bright)", border: "1px solid var(--dm-outline-variant)",
+                          color: "var(--dm-primary)",
+                        }}>
+                          {sp.name}
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+              )}
+              {char.spells.length > 0 && (
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--dm-text-muted)", marginBottom: 6 }}>1st Level</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {char.spells.map((id) => {
+                      const sp = allSpellsData.find((s) => s.id === id);
+                      return sp ? (
+                        <span key={id} style={{
+                          padding: "5px 12px", borderRadius: 16, fontSize: 12,
+                          background: "var(--dm-surface-bright)", border: "1px solid var(--dm-outline-variant)",
+                          color: "var(--dm-primary)",
+                        }}>
+                          {sp.name}
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Racial Traits */}
+          {raceData?.traits?.length > 0 && (
+            <div style={{
+              background: "var(--dm-surface)", borderRadius: 16, padding: 20, marginBottom: 24,
+              border: "1px solid var(--dm-outline-variant)",
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--dm-text-muted)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>
+                Racial Traits
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {raceData.traits.map((t) => (
+                  <TraitChip key={t.name} trait={t} asButton />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 8 }}>
+            <Ripple onClick={() => setFinished(false)} style={{ ...styles.secondaryBtn, gap: 6 }}>
+              <Icon name="edit" size={16} /> Edit Character
+            </Ripple>
+            <Ripple onClick={() => onBack()} style={{ ...styles.primaryBtn, gap: 6 }}>
+              <Icon name="check" size={16} /> Done
+            </Ripple>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={styles.root}>
       {/* Top bar */}
@@ -1746,9 +2604,24 @@ function CharacterCreator({ onBack }) {
             ) : (
               <Ripple
                 onClick={() => {
-                  /* TODO: save */
+                  if (!char.name.trim()) return;
+                  const chars = loadCharacters();
+                  const charToSave = { ...char, assignedStats, id: editId || char.id || Date.now().toString() };
+                  const existing = chars.findIndex((c) => c.id === charToSave.id);
+                  if (existing >= 0) {
+                    chars[existing] = charToSave;
+                  } else {
+                    chars.push(charToSave);
+                  }
+                  saveCharacters(chars);
+                  localStorage.removeItem(STORAGE_KEY);
+                  setFinished(true);
                 }}
-                style={styles.primaryBtn}
+                style={{
+                  ...styles.primaryBtn,
+                  opacity: char.name.trim() ? 1 : 0.4,
+                  cursor: char.name.trim() ? "pointer" : "default",
+                }}
               >
                 <Icon name="check" size={18} style={{ marginRight: 4 }} />{" "}
                 Finish
@@ -1784,6 +2657,7 @@ function CharacterCreator({ onBack }) {
               label="Class"
               value={`${classData.name} (Lvl ${char.level})`}
               icon={CLASS_ICONS[char.class]}
+              sub={char.skills.length > 0 ? `Skills: ${char.skills.join(", ")}` : null}
             />
           )}
           {bgData && (
@@ -1791,6 +2665,7 @@ function CharacterCreator({ onBack }) {
               label="Background"
               value={bgData.name}
               icon={bgData.icon}
+              sub={bgData.skills.join(", ")}
             />
           )}
           {alData && (
@@ -1801,7 +2676,7 @@ function CharacterCreator({ onBack }) {
             />
           )}
           {Object.keys(assignedStats).length > 0 && (
-            <div style={{ marginTop: 12 }}>
+            <div style={{ marginTop: 10 }}>
               <div
                 style={{
                   fontSize: 11,
@@ -1860,13 +2735,13 @@ function CharacterCreator({ onBack }) {
             </div>
           )}
           {char.equipment.length > 0 && (
-            <div style={{ marginTop: 12 }}>
+            <div style={{ marginTop: 10 }}>
               <div
                 style={{
                   fontSize: 11,
                   color: "var(--dm-text-muted)",
                   fontWeight: 600,
-                  marginBottom: 6,
+                  marginBottom: 4,
                   letterSpacing: 0.5,
                   textTransform: "uppercase",
                 }}
@@ -1915,14 +2790,14 @@ function CharacterCreator({ onBack }) {
   );
 }
 
-function SummaryRow({ label, value, icon }) {
+function SummaryRow({ label, value, icon, sub }) {
   return (
     <div
       style={{
         display: "flex",
-        alignItems: "center",
+        alignItems: "flex-start",
         gap: 8,
-        padding: "6px 0",
+        padding: "8px 0",
         borderBottom: "1px solid var(--dm-outline-variant)",
       }}
     >
@@ -1930,16 +2805,21 @@ function SummaryRow({ label, value, icon }) {
         <Icon
           name={icon}
           size={16}
-          style={{ color: "var(--dm-primary-dim)", flexShrink: 0 }}
+          style={{ color: "var(--dm-primary-dim)", flexShrink: 0, marginTop: 2 }}
         />
       )}
-      <div>
-        <div style={{ fontSize: 11, color: "var(--dm-text-muted)" }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 11, color: "var(--dm-text-muted)", lineHeight: 1.2 }}>
           {label}
         </div>
-        <div style={{ fontSize: 14, fontWeight: 500, color: "var(--dm-text)" }}>
+        <div style={{ fontSize: 14, fontWeight: 500, color: "var(--dm-text)", lineHeight: 1.3 }}>
           {value}
         </div>
+        {sub && (
+          <div style={{ fontSize: 11, color: "var(--dm-text-muted)", marginTop: 2, lineHeight: 1.3 }}>
+            {sub}
+          </div>
+        )}
       </div>
     </div>
   );
