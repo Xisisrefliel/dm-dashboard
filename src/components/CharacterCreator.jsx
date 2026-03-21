@@ -516,6 +516,7 @@ function useTooltipPos(ref, tooltipWidth = 280) {
 }
 
 function TraitChip({ trait, asButton }) {
+  const mobile = useIsMobile();
   const [hovered, setHovered] = useState(false);
   const ref = useRef(null);
   const { tooltipRef, style, calcPos } = useTooltipPos(ref, 260);
@@ -523,8 +524,8 @@ function TraitChip({ trait, asButton }) {
   return (
     <span
       ref={ref}
-      onMouseEnter={() => { setHovered(true); calcPos(); }}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={mobile ? undefined : () => { setHovered(true); calcPos(); }}
+      onMouseLeave={mobile ? undefined : () => setHovered(false)}
       style={{ display: "inline-block" }}
     >
       <span
@@ -546,7 +547,7 @@ function TraitChip({ trait, asButton }) {
       >
         {trait.name}
       </span>
-      {hovered && (
+      {!mobile && hovered && (
         <div
           ref={tooltipRef}
           style={{
@@ -661,6 +662,7 @@ function RaceCard({ race, selected, onSelect }) {
 }
 
 function ClassCard({ cls, selected, onSelect }) {
+  const mobile = useIsMobile();
   const [hovered, setHovered] = useState(false);
   const ref = useRef(null);
   const { tooltipRef, style, calcPos } = useTooltipPos(ref, 300);
@@ -668,7 +670,7 @@ function ClassCard({ cls, selected, onSelect }) {
   const lvl1Features = cls.features?.filter((f) => f.level === 1).map((f) => f.name) || [];
 
   return (
-    <div ref={ref} onMouseEnter={() => { setHovered(true); calcPos(); }} onMouseLeave={() => setHovered(false)} style={{ position: "relative" }}>
+    <div ref={ref} onMouseEnter={mobile ? undefined : () => { setHovered(true); calcPos(); }} onMouseLeave={mobile ? undefined : () => setHovered(false)} style={{ position: "relative" }}>
       <Ripple
         onClick={onSelect}
         style={{
@@ -693,7 +695,7 @@ function ClassCard({ cls, selected, onSelect }) {
           <div style={{ fontSize: 13, color: "var(--dm-text-secondary)" }}>Saves: {cls.savingThrows.join(", ")}</div>
         </div>
       </Ripple>
-      {hovered && (
+      {!mobile && hovered && (
         <div ref={tooltipRef} style={{
           ...style, padding: 14, borderRadius: 12,
           background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
@@ -734,6 +736,7 @@ function ClassCard({ cls, selected, onSelect }) {
 }
 
 function EquipmentCard({ eq, selected, disabled, onToggle, radioMode, locked }) {
+  const mobile = useIsMobile();
   const [hovered, setHovered] = useState(false);
   const ref = useRef(null);
   const { tooltipRef, style, calcPos } = useTooltipPos(ref, 280);
@@ -746,7 +749,7 @@ function EquipmentCard({ eq, selected, disabled, onToggle, radioMode, locked }) 
     : null;
 
   return (
-    <div ref={ref} onMouseEnter={() => { setHovered(true); calcPos(); }} onMouseLeave={() => setHovered(false)} style={{ position: "relative" }}>
+    <div ref={ref} onMouseEnter={mobile ? undefined : () => { setHovered(true); calcPos(); }} onMouseLeave={mobile ? undefined : () => setHovered(false)} style={{ position: "relative" }}>
       <Ripple
         onClick={locked ? undefined : onToggle}
         style={{
@@ -768,7 +771,7 @@ function EquipmentCard({ eq, selected, disabled, onToggle, radioMode, locked }) 
         </span>
         {!radioMode && checkIcon && <Icon name={checkIcon} size={18} style={{ color: locked ? "var(--dm-text-muted)" : "var(--dm-primary)", marginLeft: "auto" }} />}
       </Ripple>
-      {hovered && (
+      {!mobile && hovered && (
         <div ref={tooltipRef} style={{
           ...style, padding: 14, borderRadius: 12,
           background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
@@ -2613,8 +2616,6 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
           const chipRef = useRef(null);
           const { tooltipRef: ttRef, style: ttStyle, calcPos: ttCalc } = useTooltipPos(chipRef, 300);
           const [tipOpen, setTipOpen] = useState(false);
-          const [expanded, setExpanded] = useState(false);
-
           const spellIcon = spell.school === "Evocation" ? "local_fire_department" :
             spell.school === "Abjuration" ? "shield" :
             spell.school === "Conjuration" ? "auto_awesome" :
@@ -2623,33 +2624,6 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
             spell.school === "Illusion" ? "blur_on" :
             spell.school === "Necromancy" ? "skull" :
             spell.school === "Transmutation" ? "swap_horiz" : "auto_fix_high";
-
-          const detailContent = (
-            <>
-              <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
-                <span style={{ color: "var(--dm-text-muted)" }}>School: </span>{spell.school}
-              </div>
-              <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
-                <span style={{ color: "var(--dm-text-muted)" }}>Cast Time: </span>{spell.castingTime}
-              </div>
-              <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
-                <span style={{ color: "var(--dm-text-muted)" }}>Range: </span>{spell.range}
-              </div>
-              {spell.components && (
-                <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
-                  <span style={{ color: "var(--dm-text-muted)" }}>Components: </span>
-                  {spell.components.map((c) => c === "V" ? "Verbal" : c === "S" ? "Somatic" : c === "M" ? "Material" : c).join(", ")}
-                  {spell.material && <span style={{ color: "var(--dm-text-muted)" }}> ({spell.material})</span>}
-                </div>
-              )}
-              <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
-                <span style={{ color: "var(--dm-text-muted)" }}>Duration: </span>{spell.duration}{spell.concentration ? " (Concentration)" : ""}
-              </div>
-              <div style={{ fontSize: 12, color: "var(--dm-text-secondary)", lineHeight: 1.5, marginTop: 6 }}>
-                {spell.description.length > 200 ? spell.description.slice(0, 200) + "…" : spell.description}
-              </div>
-            </>
-          );
 
           return (
             <div
@@ -2661,7 +2635,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
               <Ripple
                 onClick={onToggle}
                 style={{
-                  padding: "12px 16px", borderRadius: expanded && isMobile ? "12px 12px 0 0" : 12,
+                  padding: "12px 16px", borderRadius: 12,
                   display: "flex", gap: 12, alignItems: "center",
                   background: selected ? "var(--dm-primary-container)" : "var(--dm-surface)",
                   border: selected ? "2px solid var(--dm-primary)" : "1px solid var(--dm-outline-variant)",
@@ -2678,26 +2652,8 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                   </div>
                 </div>
                 {selected && <Icon name="check_circle" size={18} style={{ color: "var(--dm-primary)", flexShrink: 0 }} />}
-                {isMobile && (
-                  <div
-                    onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-                    style={{ padding: 4, flexShrink: 0 }}
-                  >
-                    <Icon name={expanded ? "expand_less" : "expand_more"} size={20} style={{ color: "var(--dm-text-muted)" }} />
-                  </div>
-                )}
               </Ripple>
-              {/* Mobile: inline expand */}
-              {isMobile && expanded && (
-                <div style={{
-                  padding: "12px 16px", borderRadius: "0 0 12px 12px",
-                  background: "var(--dm-surface-brighter)",
-                  border: "1px solid var(--dm-outline-variant)", borderTop: "none",
-                }}>
-                  {detailContent}
-                </div>
-              )}
-              {/* Desktop: hover tooltip */}
+              {/* Desktop only: hover tooltip */}
               {!isMobile && tipOpen && (
                 <div ref={ttRef} style={{
                   ...ttStyle, padding: 14, borderRadius: 12,
@@ -2705,7 +2661,28 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                   boxShadow: "0 8px 24px rgba(0,0,0,0.5)", zIndex: 100, pointerEvents: "none",
                 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: "var(--dm-primary)", marginBottom: 6 }}>{spell.name}</div>
-                  {detailContent}
+                  <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+                    <span style={{ color: "var(--dm-text-muted)" }}>School: </span>{spell.school}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+                    <span style={{ color: "var(--dm-text-muted)" }}>Cast Time: </span>{spell.castingTime}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+                    <span style={{ color: "var(--dm-text-muted)" }}>Range: </span>{spell.range}
+                  </div>
+                  {spell.components && (
+                    <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+                      <span style={{ color: "var(--dm-text-muted)" }}>Components: </span>
+                      {spell.components.map((c) => c === "V" ? "Verbal" : c === "S" ? "Somatic" : c === "M" ? "Material" : c).join(", ")}
+                      {spell.material && <span style={{ color: "var(--dm-text-muted)" }}> ({spell.material})</span>}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+                    <span style={{ color: "var(--dm-text-muted)" }}>Duration: </span>{spell.duration}{spell.concentration ? " (Concentration)" : ""}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--dm-text-secondary)", lineHeight: 1.5, marginTop: 6 }}>
+                    {spell.description.length > 200 ? spell.description.slice(0, 200) + "…" : spell.description}
+                  </div>
                 </div>
               )}
             </div>
