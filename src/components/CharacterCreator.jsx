@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import racesData from "../data/srd-races.json";
 import classesData from "../data/srd-classes.json";
+import allSpellsData from "../data/srd-spells.json";
 import Icon from "./ui/Icon.jsx";
 import Ripple from "./ui/Ripple.jsx";
 import dragonbornImg from "../assets/races/dragonborn.jpg";
@@ -86,7 +87,20 @@ const STEPS = [
   "Stats",
   "Alignment",
   "Equipment",
+  "Spells",
 ];
+
+// Per SRD: cantrips and spells known/prepared at level 1
+const CLASS_SPELL_SLOTS = {
+  bard:     { cantrips: 2, spells: 4, castLevel: 1 },
+  cleric:   { cantrips: 3, spells: 4, castLevel: 1 },
+  druid:    { cantrips: 2, spells: 4, castLevel: 1 },
+  sorcerer: { cantrips: 4, spells: 2, castLevel: 1 },
+  warlock:  { cantrips: 2, spells: 2, castLevel: 1 },
+  wizard:   { cantrips: 3, spells: 4, castLevel: 1 },
+  paladin:  { cantrips: 0, spells: 2, castLevel: 2 },
+  ranger:   { cantrips: 0, spells: 2, castLevel: 2 },
+};
 
 const BACKGROUNDS = [
   {
@@ -720,9 +734,12 @@ function CharacterCreator({ onBack }) {
     race: null,
     class: null,
     background: null,
+    level: 1,
     stats: { STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 10, CHA: 8 },
     alignment: null,
     equipment: [],
+    cantrips: [],
+    spells: [],
   });
 
   const update = (key, val) => setChar((c) => ({ ...c, [key]: val }));
@@ -743,6 +760,9 @@ function CharacterCreator({ onBack }) {
     update(key, val);
   };
 
+  const spellSlots = char.class ? CLASS_SPELL_SLOTS[char.class] : null;
+  const hasSpellcasting = spellSlots && char.level >= spellSlots.castLevel;
+
   const stepComplete = (i) => {
     switch (i) {
       case 0: return char.race != null;
@@ -751,6 +771,12 @@ function CharacterCreator({ onBack }) {
       case 3: return Object.keys(assignedStats).length === 6;
       case 4: return char.alignment != null;
       case 5: return char.equipment.length > 0;
+      case 6: // Spells — complete if non-caster or if they've picked their cantrips/spells
+        if (!hasSpellcasting) return true;
+        const needCantrips = spellSlots.cantrips > 0;
+        const needSpells = spellSlots.spells > 0;
+        return (!needCantrips || char.cantrips.length === spellSlots.cantrips) &&
+               (!needSpells || char.spells.length === spellSlots.spells);
       default: return false;
     }
   };
@@ -1048,6 +1074,47 @@ function CharacterCreator({ onBack }) {
               {raceData &&
                 ` Racial bonuses from ${raceData.name} are added automatically.`}
             </p>
+
+            {/* Level selector */}
+            <div style={{
+              display: "flex", alignItems: "center", gap: 12, marginBottom: 20,
+              background: "var(--dm-surface)", borderRadius: 16, padding: "12px 20px",
+              border: "1px solid var(--dm-outline-variant)", flexWrap: "wrap",
+            }}>
+              <Icon name="military_tech" size={22} style={{ color: "var(--dm-primary)" }} />
+              <span style={{ fontSize: 14, fontWeight: 600 }}>Starting Level</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Ripple
+                  onClick={() => update("level", Math.max(1, char.level - 1))}
+                  style={{
+                    width: 32, height: 32, borderRadius: 10,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    background: "var(--dm-surface-bright)", border: "1px solid var(--dm-outline-variant)",
+                  }}
+                >
+                  <Icon name="remove" size={18} />
+                </Ripple>
+                <span style={{
+                  fontSize: 22, fontWeight: 700, color: "var(--dm-primary)",
+                  minWidth: 36, textAlign: "center",
+                }}>
+                  {char.level}
+                </span>
+                <Ripple
+                  onClick={() => update("level", Math.min(20, char.level + 1))}
+                  style={{
+                    width: 32, height: 32, borderRadius: 10,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    background: "var(--dm-surface-bright)", border: "1px solid var(--dm-outline-variant)",
+                  }}
+                >
+                  <Icon name="add" size={18} />
+                </Ripple>
+              </div>
+              <span style={{ fontSize: 12, color: "var(--dm-text-muted)" }}>
+                HP: {classData ? classData.hitDie + (char.level - 1) * (Math.floor(classData.hitDie / 2) + 1) : "—"}
+              </span>
+            </div>
 
             <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
               <Ripple onClick={rollStats} style={{ ...styles.secondaryBtn, gap: 6 }}>
@@ -1377,6 +1444,189 @@ function CharacterCreator({ onBack }) {
           </div>
         );
 
+      case 6: { // Spells
+        const className = char.class ? char.class.charAt(0).toUpperCase() + char.class.slice(1) : "";
+        const slots = spellSlots;
+
+        if (!hasSpellcasting) {
+          return (
+            <div>
+              <h2 style={styles.stepTitle}>Spells</h2>
+              <div style={{
+                background: "var(--dm-surface)", borderRadius: 16, padding: 32,
+                textAlign: "center", border: "1px solid var(--dm-outline-variant)",
+              }}>
+                <Icon name="block" size={48} style={{ color: "var(--dm-text-muted)", marginBottom: 12 }} />
+                <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>
+                  {char.class ? `${className} doesn't have spellcasting at level ${char.level}` : "Select a class first"}
+                </div>
+                <div style={{ fontSize: 13, color: "var(--dm-text-secondary)" }}>
+                  {char.class && slots ? `${className} gains spellcasting at level ${slots.castLevel}.` : "Choose a class to see available spells."}
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        const availableCantrips = allSpellsData.filter(
+          (s) => s.level === 0 && s.classes.map((c) => c.toLowerCase()).includes(char.class)
+        );
+        const availableSpells = allSpellsData.filter(
+          (s) => s.level === 1 && s.classes.map((c) => c.toLowerCase()).includes(char.class)
+        );
+
+        const toggleCantrip = (id) => {
+          if (char.cantrips.includes(id)) {
+            update("cantrips", char.cantrips.filter((c) => c !== id));
+          } else if (char.cantrips.length < slots.cantrips) {
+            update("cantrips", [...char.cantrips, id]);
+          }
+        };
+        const toggleSpell = (id) => {
+          if (char.spells.includes(id)) {
+            update("spells", char.spells.filter((s) => s !== id));
+          } else if (char.spells.length < slots.spells) {
+            update("spells", [...char.spells, id]);
+          }
+        };
+
+        const SpellRow = ({ spell, selected, disabled, onToggle }) => {
+          const chipRef = useRef(null);
+          const { tooltipRef: ttRef, style: ttStyle, calcPos: ttCalc } = useTooltipPos(chipRef, 300);
+          const [tipOpen, setTipOpen] = useState(false);
+          return (
+            <div ref={chipRef} onMouseEnter={() => { setTipOpen(true); ttCalc(); }} onMouseLeave={() => setTipOpen(false)} style={{ position: "relative" }}>
+              <Ripple
+                onClick={onToggle}
+                style={{
+                  padding: "12px 16px", borderRadius: 12,
+                  display: "flex", gap: 12, alignItems: "center",
+                  background: selected ? "var(--dm-primary-container)" : "var(--dm-surface)",
+                  border: selected ? "2px solid var(--dm-primary)" : "1px solid var(--dm-outline-variant)",
+                  opacity: disabled && !selected ? 0.5 : 1,
+                }}
+              >
+                <Icon
+                  name={spell.school === "Evocation" ? "local_fire_department" :
+                    spell.school === "Abjuration" ? "shield" :
+                    spell.school === "Conjuration" ? "auto_awesome" :
+                    spell.school === "Divination" ? "visibility" :
+                    spell.school === "Enchantment" ? "psychology" :
+                    spell.school === "Illusion" ? "blur_on" :
+                    spell.school === "Necromancy" ? "skull" :
+                    spell.school === "Transmutation" ? "swap_horiz" : "auto_fix_high"}
+                  size={20}
+                  style={{ color: selected ? "var(--dm-primary)" : "var(--dm-text-muted)", flexShrink: 0 }}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: selected ? "var(--dm-on-primary-container)" : "var(--dm-text)" }}>
+                    {spell.name}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--dm-text-muted)" }}>
+                    {spell.school} · {spell.castingTime}
+                  </div>
+                </div>
+                {selected && <Icon name="check_circle" size={18} style={{ color: "var(--dm-primary)", flexShrink: 0 }} />}
+              </Ripple>
+              {tipOpen && (
+                <div ref={ttRef} style={{
+                  ...ttStyle, padding: 14, borderRadius: 12,
+                  background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.5)", zIndex: 100, pointerEvents: "none",
+                }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--dm-primary)", marginBottom: 6 }}>{spell.name}</div>
+                  <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+                    <span style={{ color: "var(--dm-text-muted)" }}>School: </span>{spell.school}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+                    <span style={{ color: "var(--dm-text-muted)" }}>Cast Time: </span>{spell.castingTime}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+                    <span style={{ color: "var(--dm-text-muted)" }}>Range: </span>{spell.range}
+                  </div>
+                  {spell.components && (
+                    <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+                      <span style={{ color: "var(--dm-text-muted)" }}>Components: </span>
+                      {spell.components.map((c) => c === "V" ? "Verbal" : c === "S" ? "Somatic" : c === "M" ? "Material" : c).join(", ")}
+                      {spell.material && <span style={{ color: "var(--dm-text-muted)" }}> ({spell.material})</span>}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+                    <span style={{ color: "var(--dm-text-muted)" }}>Duration: </span>{spell.duration}{spell.concentration ? " (Concentration)" : ""}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--dm-text-secondary)", lineHeight: 1.5, marginTop: 6 }}>
+                    {spell.description.length > 200 ? spell.description.slice(0, 200) + "…" : spell.description}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        };
+
+        return (
+          <div>
+            <h2 style={styles.stepTitle}>Choose Spells</h2>
+            <p style={styles.stepDesc}>
+              As a {className}, select your known cantrips and spells.
+              {slots.cantrips > 0 && ` You know ${slots.cantrips} cantrip${slots.cantrips > 1 ? "s" : ""}.`}
+              {slots.spells > 0 && ` You know ${slots.spells} 1st-level spell${slots.spells > 1 ? "s" : ""}.`}
+            </p>
+
+            {/* Cantrips */}
+            {slots.cantrips > 0 && (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>
+                    <Icon name="auto_fix_high" size={18} style={{ verticalAlign: "middle", marginRight: 6, color: "var(--dm-primary)" }} />
+                    Cantrips
+                  </h3>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: char.cantrips.length >= slots.cantrips ? "var(--dm-primary)" : "var(--dm-text-muted)" }}>
+                    {char.cantrips.length} / {slots.cantrips}
+                  </span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 8, marginBottom: 28 }}>
+                  {availableCantrips.map((sp) => (
+                    <SpellRow
+                      key={sp.id}
+                      spell={sp}
+                      selected={char.cantrips.includes(sp.id)}
+                      disabled={char.cantrips.length >= slots.cantrips}
+                      onToggle={() => toggleCantrip(sp.id)}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Level 1 Spells */}
+            {slots.spells > 0 && (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>
+                    <Icon name="menu_book" size={18} style={{ verticalAlign: "middle", marginRight: 6, color: "var(--dm-primary)" }} />
+                    1st-Level Spells
+                  </h3>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: char.spells.length >= slots.spells ? "var(--dm-primary)" : "var(--dm-text-muted)" }}>
+                    {char.spells.length} / {slots.spells}
+                  </span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 8 }}>
+                  {availableSpells.map((sp) => (
+                    <SpellRow
+                      key={sp.id}
+                      spell={sp}
+                      selected={char.spells.includes(sp.id)}
+                      disabled={char.spells.length >= slots.spells}
+                      onToggle={() => toggleSpell(sp.id)}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        );
+      }
+
       default:
         return null;
     }
@@ -1473,33 +1723,38 @@ function CharacterCreator({ onBack }) {
         <div style={styles.main}>
           {renderStep()}
 
-          {/* Nav buttons (always visible except on auto-advance steps) */}
-          {(step === 3 || step === 5) && (
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                marginTop: 24,
-                justifyContent: "space-between",
-              }}
-            >
+          {/* Nav buttons */}
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              marginTop: 24,
+              justifyContent: "space-between",
+            }}
+          >
+            {step > 0 ? (
               <Ripple onClick={prev} style={styles.secondaryBtn}>
                 <Icon name="arrow_back" size={18} style={{ marginRight: 4 }} />{" "}
                 Back
               </Ripple>
-              {step === 5 && (
-                <Ripple
-                  onClick={() => {
-                    /* TODO: save */
-                  }}
-                  style={styles.primaryBtn}
-                >
-                  <Icon name="check" size={18} style={{ marginRight: 4 }} />{" "}
-                  Finish
-                </Ripple>
-              )}
-            </div>
-          )}
+            ) : <div />}
+            {step < STEPS.length - 1 ? (
+              <Ripple onClick={next} style={styles.secondaryBtn}>
+                Next{" "}
+                <Icon name="arrow_forward" size={18} style={{ marginLeft: 4 }} />
+              </Ripple>
+            ) : (
+              <Ripple
+                onClick={() => {
+                  /* TODO: save */
+                }}
+                style={styles.primaryBtn}
+              >
+                <Icon name="check" size={18} style={{ marginRight: 4 }} />{" "}
+                Finish
+              </Ripple>
+            )}
+          </div>
         </div>
 
         {/* Summary panel */}
@@ -1527,7 +1782,7 @@ function CharacterCreator({ onBack }) {
           {classData && (
             <SummaryRow
               label="Class"
-              value={classData.name}
+              value={`${classData.name} (Lvl ${char.level})`}
               icon={CLASS_ICONS[char.class]}
             />
           )}
