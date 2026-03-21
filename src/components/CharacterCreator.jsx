@@ -31,6 +31,8 @@ import rogueImg from "../assets/classes/Rogue.jpg";
 import sorcererImg from "../assets/classes/Sorcerer.jpg";
 import warlockImg from "../assets/classes/Warlock.jpg";
 import wizardImg from "../assets/classes/Wizard.jpg";
+import humanLandscape from "../assets/race-landscapes/human.jpg";
+
 import acolyteImg from "../assets/backgrounds/acolyte.jpg";
 import criminalImg from "../assets/backgrounds/criminal.jpg";
 import folkHeroImg from "../assets/backgrounds/folk hero.jpg";
@@ -84,6 +86,19 @@ const RACE_IMAGES = {
   halfling: halflingImg,
   "half-orc": halfOrcImg,
   "half-elf": halfElfImg,
+};
+
+const RACE_LANDSCAPES = {
+  human: humanLandscape,
+  // Add more as images are generated:
+  // elf: elfLandscape,
+  // dwarf: dwarfLandscape,
+  // halfling: halflingLandscape,
+  // dragonborn: dragonbornLandscape,
+  // tiefling: tieflingLandscape,
+  // gnome: gnomeLandscape,
+  // "half-elf": halfElfLandscape,
+  // "half-orc": halfOrcLandscape,
 };
 
 const STEPS = [
@@ -373,6 +388,14 @@ const ABILITY_NAMES = {
   CHA: "Charisma",
 };
 const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
+const POINT_BUY_COSTS = { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 };
+const POINT_BUY_TOTAL = 27;
+const ABILITY_ICONS = {
+  STR: "fitness_center", DEX: "speed", CON: "shield",
+  INT: "psychology", WIS: "visibility", CHA: "theater_comedy",
+};
+const DEFAULT_POINTBUY = { STR: 8, DEX: 8, CON: 8, INT: 8, WIS: 8, CHA: 8 };
+const DEFAULT_MANUAL = { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 };
 
 const RACE_ICONS = {
   dragonborn: "local_fire_department",
@@ -443,6 +466,26 @@ const CLASS_PRIMARY_ABILITY = {
   ranger: "Dexterity & Wisdom", rogue: "Dexterity", sorcerer: "Charisma",
   warlock: "Charisma", wizard: "Intelligence",
 };
+
+function useCarouselOverflow(ref) {
+  const [overflows, setOverflows] = useState(true);
+  const [, bump] = useState(0);
+  useEffect(() => {
+    // Re-run when ref attaches (triggered by bump)
+    const el = ref.current;
+    if (!el) {
+      // Not mounted yet — schedule a re-check
+      const id = requestAnimationFrame(() => bump((n) => n + 1));
+      return () => cancelAnimationFrame(id);
+    }
+    const check = () => setOverflows(el.scrollWidth > el.clientWidth + 2);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
+  return overflows;
+}
 
 function useTooltipPos(ref, tooltipWidth = 280) {
   const tooltipRef = useRef(null);
@@ -753,11 +796,12 @@ function EquipmentCard({ eq, selected, disabled, onToggle, radioMode, locked }) 
       <Ripple
         onClick={locked ? undefined : onToggle}
         style={{
-          background: selected ? (locked ? "var(--dm-surface-bright)" : "var(--dm-primary-container)") : "var(--dm-surface)",
+          background: selected ? (locked ? "var(--dm-surface-bright)" : "var(--dm-primary-container)") : "rgba(28, 28, 31, 0.65)",
+          backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
           borderRadius: 16, padding: 16,
           display: "flex", flexDirection: "row", gap: 12, alignItems: "center",
           transition: "border-color 0.2s, background 0.2s",
-          border: selected ? (locked ? "1px solid var(--dm-outline-variant)" : "2px solid var(--dm-primary)") : "1px solid var(--dm-outline-variant)",
+          border: selected ? (locked ? "1px solid rgba(255,255,255,0.08)" : "2px solid var(--dm-primary)") : "1px solid rgba(255,255,255,0.08)",
           opacity: disabled && !selected && !locked ? 0.5 : 1,
           cursor: locked ? "default" : (disabled && !selected ? "default" : "pointer"),
         }}
@@ -1354,8 +1398,16 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
   const [previewBg, setPreviewBg] = useState(null);
   const bgCarouselRef = useRef(null);
   const stepBarRef = useRef(null);
+  const [showValidation, setShowValidation] = useState(false);
+  const nameInputRef = useRef(null);
+  const raceCarouselOverflows = useCarouselOverflow(raceCarouselRef);
+  const classCarouselOverflows = useCarouselOverflow(classCarouselRef);
+  const bgCarouselOverflows = useCarouselOverflow(bgCarouselRef);
 
-  const update = (key, val) => setChar((c) => ({ ...c, [key]: val }));
+  const update = (key, val) => {
+    if (key === "name" && showValidation) setShowValidation(false);
+    setChar((c) => ({ ...c, [key]: val }));
+  };
 
   const raceData = useMemo(
     () => (char.race ? racesData.find((r) => r.id === char.race) : null),
@@ -1400,6 +1452,15 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                (!needSpells || char.spells.length === spellSlots.spells);
       default: return false;
     }
+  };
+
+  const getMissing = () => {
+    const missing = [];
+    if (!char.name.trim()) missing.push("Name");
+    for (let i = 0; i < STEPS.length; i++) {
+      if (!stepComplete(i)) missing.push(STEPS[i]);
+    }
+    return missing;
   };
 
   // Class starting equipment config
@@ -1471,15 +1532,21 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
   };
 
   // Stat assignment
-  const [unassigned, setUnassigned] = useState(editChar?.assignedStats ? [] : (saved?.unassigned ?? [...STANDARD_ARRAY]));
-  const [assignedStats, setAssignedStats] = useState(editChar?.assignedStats || saved?.assignedStats || {});
+  const [statMode, setStatMode] = useState(saved?.statMode || "pointbuy");
+  const initStats = () => {
+    if (editChar?.assignedStats) return editChar.assignedStats;
+    if (saved?.assignedStats && Object.keys(saved.assignedStats).length === 6) return saved.assignedStats;
+    return { ...DEFAULT_POINTBUY };
+  };
+  const [assignedStats, setAssignedStats] = useState(initStats);
+  const [unassigned, setUnassigned] = useState([]);
 
   // Persist to localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      step, char, assignedStats, unassigned, finished,
+      step, char, assignedStats, unassigned, finished, statMode,
     }));
-  }, [step, char, assignedStats, unassigned, finished]);
+  }, [step, char, assignedStats, unassigned, finished, statMode]);
 
   // Auto-scroll step bar to active step on mobile
   useEffect(() => {
@@ -1497,18 +1564,21 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
     prevStepRef.current = step;
   }, [step]);
 
-  const assignStat = (ability, val) => {
+  const adjustStat = (ability, delta) => {
     haptic.trigger("selection");
-    const prev = assignedStats[ability];
-    const newUnassigned =
-      prev != null ? [...unassigned, prev] : [...unassigned];
-    const idx = newUnassigned.indexOf(val);
-    if (idx === -1) return;
-    newUnassigned.splice(idx, 1);
-    setUnassigned(newUnassigned.sort((a, b) => b - a));
-    const newAssigned = { ...assignedStats, [ability]: val };
-    setAssignedStats(newAssigned);
-    update("stats", { ...char.stats, [ability]: val });
+    const current = assignedStats[ability] ?? 8;
+    let newVal;
+    if (statMode === "pointbuy") {
+      newVal = Math.max(8, Math.min(15, current + delta));
+      const newStats = { ...assignedStats, [ability]: newVal };
+      const spent = Object.values(newStats).reduce((sum, v) => sum + (POINT_BUY_COSTS[v] ?? 0), 0);
+      if (spent > POINT_BUY_TOTAL) return;
+    } else {
+      newVal = Math.max(1, Math.min(30, current + delta));
+    }
+    const newStats = { ...assignedStats, [ability]: newVal };
+    setAssignedStats(newStats);
+    update("stats", { ...char.stats, [ability]: newVal });
   };
 
   const rollStats = () => {
@@ -1516,29 +1586,21 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
     const roll4d6 = () => {
       const dice = Array.from({ length: 4 }, () => Math.floor(Math.random() * 6) + 1);
       dice.sort((a, b) => a - b);
-      return dice[1] + dice[2] + dice[3]; // drop lowest
+      return dice[1] + dice[2] + dice[3];
     };
-    const rolled = Array.from({ length: 6 }, roll4d6).sort((a, b) => b - a);
-    setUnassigned(rolled);
-    setAssignedStats({});
+    const rolled = {};
+    ABILITIES.forEach(ab => { rolled[ab] = roll4d6(); });
+    setAssignedStats(rolled);
+    setStatMode("manual");
+    update("stats", { ...char.stats, ...rolled });
   };
 
-  const resetToStandard = () => {
-    haptic.trigger("light");
-    setUnassigned([...STANDARD_ARRAY]);
-    setAssignedStats({});
-  };
-
-  const clearStat = (ability) => {
-    const val = assignedStats[ability];
-    if (val == null) return;
-    haptic.trigger("light");
-    setUnassigned((u) => [...u, val].sort((a, b) => b - a));
-    setAssignedStats((a) => {
-      const n = { ...a };
-      delete n[ability];
-      return n;
-    });
+  const switchStatMode = (mode) => {
+    haptic.trigger("selection");
+    setStatMode(mode);
+    const defaults = mode === "pointbuy" ? { ...DEFAULT_POINTBUY } : { ...DEFAULT_MANUAL };
+    setAssignedStats(defaults);
+    update("stats", { ...char.stats, ...defaults });
   };
 
   const getRacialBonus = (ability) => {
@@ -1573,8 +1635,8 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
 
               {/* Detail card */}
               <div style={{
-                display: "flex", gap: 0, background: "var(--dm-surface)", borderRadius: 20,
-                overflow: "hidden", border: "1px solid var(--dm-outline-variant)", marginBottom: 24,
+                display: "flex", gap: 0, background: "rgba(28, 28, 31, 0.7)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderRadius: 20,
+                overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)", marginBottom: 24,
                 ...(isMobile ? { flexDirection: "column" } : { height: 420 }),
               }}>
                 {pRaceImg && (
@@ -1640,7 +1702,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
 
               {/* Mini race carousel */}
               <div style={{ position: "relative" }}>
-                {!isMobile && (
+                {!isMobile && raceCarouselOverflows && (
                   <Ripple
                     onClick={() => raceCarouselRef.current?.scrollBy({ left: -240, behavior: "smooth" })}
                     style={{
@@ -1685,7 +1747,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                     );
                   })}
                 </div>
-                {!isMobile && (
+                {!isMobile && raceCarouselOverflows && (
                   <Ripple
                     onClick={() => raceCarouselRef.current?.scrollBy({ left: 240, behavior: "smooth" })}
                     style={{
@@ -1766,8 +1828,8 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
 
               {/* Detail card */}
               <div style={{
-                display: "flex", gap: 0, background: "var(--dm-surface)", borderRadius: 20,
-                overflow: "hidden", border: "1px solid var(--dm-outline-variant)", marginBottom: 24,
+                display: "flex", gap: 0, background: "rgba(28, 28, 31, 0.7)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderRadius: 20,
+                overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)", marginBottom: 24,
                 ...(isMobile ? { flexDirection: "column" } : { flexWrap: "wrap" }),
               }}>
                 {/* Image */}
@@ -1823,7 +1885,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                                 padding: isMobile ? "10px 16px" : "6px 14px", borderRadius: 20, fontSize: 13, fontWeight: 500,
                                 background: picked ? "var(--dm-primary)" : "var(--dm-surface-bright)",
                                 color: picked ? "var(--dm-on-primary)" : disabled ? "var(--dm-text-muted)" : "var(--dm-text)",
-                                border: picked ? "1px solid var(--dm-primary)" : "1px solid var(--dm-outline-variant)",
+                                border: picked ? "1px solid var(--dm-primary)" : "1px solid rgba(255,255,255,0.08)",
                                 opacity: disabled ? 0.5 : 1,
                                 transition: "all 0.15s",
                               }}
@@ -1834,11 +1896,9 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                           );
                         })}
                       </div>
-                      {selectedSkills.length > 0 && selectedSkills.length < pSkillsChoose && (
-                        <div style={{ fontSize: 12, color: "var(--dm-text-muted)", marginTop: 6 }}>
-                          {pSkillsChoose - selectedSkills.length} more to choose
-                        </div>
-                      )}
+                      <div style={{ fontSize: 12, color: "var(--dm-text-muted)", marginTop: 6, visibility: selectedSkills.length > 0 && selectedSkills.length < pSkillsChoose ? "visible" : "hidden" }}>
+                        {selectedSkills.length < pSkillsChoose ? pSkillsChoose - selectedSkills.length : 0} more to choose
+                      </div>
                     </div>
                   </div>
 
@@ -1864,7 +1924,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
 
               {/* Mini class carousel */}
               <div style={{ position: "relative" }}>
-                {!isMobile && (
+                {!isMobile && classCarouselOverflows && (
                   <Ripple
                     onClick={() => classCarouselRef.current?.scrollBy({ left: -240, behavior: "smooth" })}
                     style={{
@@ -1909,7 +1969,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                     );
                   })}
                 </div>
-                {!isMobile && (
+                {!isMobile && classCarouselOverflows && (
                   <Ripple
                     onClick={() => classCarouselRef.current?.scrollBy({ left: 240, behavior: "smooth" })}
                     style={{
@@ -1965,8 +2025,8 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
 
               {/* Detail card */}
               <div style={{
-                display: "flex", gap: 0, background: "var(--dm-surface)", borderRadius: 20,
-                overflow: "hidden", border: "1px solid var(--dm-outline-variant)", marginBottom: 24,
+                display: "flex", gap: 0, background: "rgba(28, 28, 31, 0.7)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderRadius: 20,
+                overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)", marginBottom: 24,
                 ...(isMobile ? { flexDirection: "column" } : { height: 360 }),
               }}>
                 {pBgImg && (
@@ -2010,7 +2070,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
 
               {/* Mini background carousel */}
               <div style={{ position: "relative" }}>
-                {!isMobile && (
+                {!isMobile && bgCarouselOverflows && (
                   <Ripple
                     onClick={() => bgCarouselRef.current?.scrollBy({ left: -240, behavior: "smooth" })}
                     style={{
@@ -2061,7 +2121,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                     );
                   })}
                 </div>
-                {!isMobile && (
+                {!isMobile && bgCarouselOverflows && (
                   <Ripple
                     onClick={() => bgCarouselRef.current?.scrollBy({ left: 240, behavior: "smooth" })}
                     style={{
@@ -2122,45 +2182,85 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
         );
       }
 
-      case 3: // Stats
+      case 3: { // Stats
+        const pointsSpent = statMode === "pointbuy"
+          ? Object.values(assignedStats).reduce((sum, v) => sum + (POINT_BUY_COSTS[v] ?? 0), 0)
+          : 0;
+        const pointsRemaining = POINT_BUY_TOTAL - pointsSpent;
+        const pmBtnSize = isMobile ? 44 : 36;
         return (
           <div>
-            <h2 style={styles.stepTitle}>Assign Ability Scores</h2>
-            <p style={styles.stepDesc}>
-              Assign scores to your abilities.
-              {raceData &&
-                ` Racial bonuses from ${raceData.name} are added automatically.`}
-            </p>
+            <h2 style={styles.stepTitle}>Ability Scores</h2>
+
+            {/* Mode toggle */}
+            <div style={{
+              display: "flex", justifyContent: "center", gap: 0, marginBottom: 16,
+              background: "rgba(28, 28, 31, 0.65)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+              borderRadius: 14, padding: 4,
+              border: "1px solid rgba(255,255,255,0.08)", alignSelf: "center",
+            }}>
+              {[
+                { id: "pointbuy", label: `Point Buy (${POINT_BUY_TOTAL} pts)` },
+                { id: "manual", label: "Manual Adjustment" },
+              ].map(m => (
+                <Ripple
+                  key={m.id}
+                  onClick={() => statMode !== m.id && switchStatMode(m.id)}
+                  style={{
+                    flex: 1, padding: "10px 16px", borderRadius: 11,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 13, fontWeight: 600, gap: 6, cursor: "pointer",
+                    background: statMode === m.id ? "var(--dm-primary)" : "transparent",
+                    color: statMode === m.id ? "var(--dm-on-primary, #1a1c18)" : "var(--dm-text-secondary)",
+                    transition: "all .2s",
+                  }}
+                >
+                  {m.label}
+                </Ripple>
+              ))}
+            </div>
+
+            {/* Points remaining (point buy only) */}
+            {statMode === "pointbuy" && (
+              <div style={{
+                textAlign: "center", marginBottom: 16, fontSize: 14, fontWeight: 600,
+                letterSpacing: 0.5, textTransform: "uppercase",
+                color: pointsRemaining < 0 ? "var(--dm-error, #ffb4ab)" : "var(--dm-text-secondary)",
+              }}>
+                Points Remaining: <span style={{ color: pointsRemaining === 0 ? "#6ecf9a" : pointsRemaining < 0 ? "var(--dm-error, #ffb4ab)" : "var(--dm-primary)", fontSize: 18, fontWeight: 700 }}>{pointsRemaining}</span>
+              </div>
+            )}
 
             {/* Level selector */}
             <div style={{
-              display: "flex", alignItems: "center", gap: 12, marginBottom: 20,
-              background: "var(--dm-surface)", borderRadius: 16, padding: "12px 20px",
-              border: "1px solid var(--dm-outline-variant)", flexWrap: "wrap",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              marginBottom: 20, background: "rgba(28, 28, 31, 0.65)",
+              backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+              borderRadius: 14, padding: "12px 20px",
+              border: "1px solid rgba(255,255,255,0.08)",
             }}>
-              <Icon name="military_tech" size={22} style={{ color: "var(--dm-primary)" }} />
-              <span style={{ fontSize: 14, fontWeight: 600 }}>Starting Level</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Icon name="military_tech" size={20} style={{ color: "var(--dm-primary)" }} />
+                <span style={{ fontSize: 14, fontWeight: 700, color: "var(--dm-primary)", textTransform: "uppercase", letterSpacing: 1 }}>Level:</span>
+              </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <Ripple
                   onClick={() => { haptic.trigger("selection"); update("level", Math.max(1, char.level - 1)); }}
                   style={{
-                    width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, borderRadius: 10,
+                    width: pmBtnSize, height: pmBtnSize, borderRadius: "50%",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     background: "var(--dm-surface-bright)", border: "1px solid var(--dm-outline-variant)",
                   }}
                 >
                   <Icon name="remove" size={18} />
                 </Ripple>
-                <span style={{
-                  fontSize: 22, fontWeight: 700, color: "var(--dm-primary)",
-                  minWidth: 36, textAlign: "center",
-                }}>
+                <span style={{ fontSize: 24, fontWeight: 700, color: "var(--dm-primary)", minWidth: 36, textAlign: "center" }}>
                   {char.level}
                 </span>
                 <Ripple
                   onClick={() => { haptic.trigger("selection"); update("level", Math.min(20, char.level + 1)); }}
                   style={{
-                    width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, borderRadius: 10,
+                    width: pmBtnSize, height: pmBtnSize, borderRadius: "50%",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     background: "var(--dm-surface-bright)", border: "1px solid var(--dm-outline-variant)",
                   }}
@@ -2173,175 +2273,113 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
               </span>
             </div>
 
-            <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-              <Ripple onClick={rollStats} style={{ ...styles.secondaryBtn, gap: 6, ...(isMobile ? { flex: 1, justifyContent: "center" } : {}) }}>
-                <Icon name="casino" size={18} /> Roll 4d6
-              </Ripple>
-              <Ripple onClick={resetToStandard} style={{ ...styles.secondaryBtn, gap: 6, ...(isMobile ? { flex: 1, justifyContent: "center" } : {}) }}>
-                <Icon name="restart_alt" size={18} /> Standard Array
-              </Ripple>
+            {/* Column headers */}
+            <div style={{
+              display: "flex", alignItems: "center", padding: "0 16px 8px",
+              fontSize: 11, fontWeight: 600, color: "var(--dm-text-muted)",
+              textTransform: "uppercase", letterSpacing: 1,
+            }}>
+              <span style={{ flex: 1 }}>Stats</span>
+              <span style={{ width: isMobile ? 130 : 150, textAlign: "center" }}>Score</span>
+              <span style={{ width: 50, textAlign: "right" }}>Mod</span>
             </div>
 
-            {unassigned.length > 0 && (
-              <div
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  marginBottom: 24,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 13,
-                    color: "var(--dm-text-muted)",
-                    alignSelf: "center",
-                    marginRight: 4,
-                  }}
-                >
-                  Available:
-                </span>
-                {unassigned.map((val, i) => (
-                  <span key={i} style={styles.statBubble}>
-                    {val}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(auto-fill, minmax(150px, 1fr))",
-                gap: 12,
-              }}
-            >
+            {/* Stat rows */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
               {ABILITIES.map((ab) => {
-                const assigned = assignedStats[ab];
+                const base = assignedStats[ab] ?? 8;
                 const racial = getRacialBonus(ab);
-                const total = (assigned ?? 10) + racial;
+                const total = base + racial;
                 const mod = Math.floor((total - 10) / 2);
+                const atMin = statMode === "pointbuy" ? base <= 8 : base <= 1;
+                const atMax = statMode === "pointbuy" ? base >= 15 : base >= 30;
+                const cantIncrease = statMode === "pointbuy" && !atMax && (
+                  pointsSpent + ((POINT_BUY_COSTS[base + 1] ?? 0) - (POINT_BUY_COSTS[base] ?? 0)) > POINT_BUY_TOTAL
+                );
                 return (
                   <div
                     key={ab}
                     style={{
-                      background: "var(--dm-surface)",
-                      borderRadius: 16,
-                      padding: 16,
-                      textAlign: "center",
-                      border:
-                        assigned != null
-                          ? "1px solid var(--dm-primary)"
-                          : "1px solid var(--dm-outline-variant)",
+                      display: "flex", alignItems: "center",
+                      background: "rgba(28, 28, 31, 0.65)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+                      borderRadius: 14, padding: isMobile ? "14px 12px" : "12px 16px",
+                      border: "1px solid rgba(255,255,255,0.08)",
                     }}
                   >
-                    <div
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: "var(--dm-text-muted)",
-                        letterSpacing: 1,
-                        marginBottom: 4,
-                      }}
-                    >
-                      {ab}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "var(--dm-text-secondary)",
-                        marginBottom: 8,
-                      }}
-                    >
-                      {ABILITY_NAMES[ab]}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 32,
-                        fontWeight: 700,
-                        color:
-                          assigned != null
-                            ? "var(--dm-primary)"
-                            : "var(--dm-text-muted)",
-                      }}
-                    >
-                      {assigned ?? "—"}
-                    </div>
-                    {racial > 0 && (
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color: "var(--dm-primary)",
-                          fontWeight: 500,
-                          marginTop: 2,
-                        }}
-                      >
-                        +{racial} racial
+                    {/* Icon + Ability name */}
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{
+                        width: 40, height: 40, borderRadius: "50%",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        background: "linear-gradient(135deg, rgba(var(--dm-primary-rgb, 141,166,100), 0.2), rgba(var(--dm-primary-rgb, 141,166,100), 0.05))",
+                        border: "1px solid var(--dm-outline-variant)",
+                      }}>
+                        <Icon name={ABILITY_ICONS[ab]} size={20} style={{ color: "var(--dm-primary)" }} />
                       </div>
-                    )}
-                    {assigned != null && (
-                      <div
-                        style={{
-                          fontSize: 14,
-                          color: "var(--dm-text-secondary)",
-                          marginTop: 4,
-                        }}
-                      >
-                        Total: {total} ({mod >= 0 ? "+" : ""}
-                        {mod})
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 600 }}>{ABILITY_NAMES[ab]}</div>
+                        {racial > 0 && (
+                          <div style={{ fontSize: 11, color: "var(--dm-primary)", fontWeight: 500 }}>
+                            +{racial} from {raceData?.name}
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
 
-                    {/* Assign buttons */}
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 4,
-                        justifyContent: "center",
-                        flexWrap: "wrap",
-                        marginTop: 8,
-                      }}
-                    >
-                      {assigned != null ? (
-                        <Ripple
-                          onClick={() => clearStat(ab)}
-                          style={styles.statClear}
-                        >
-                          <Icon name="close" size={14} /> Clear
-                        </Ripple>
-                      ) : (
-                        unassigned
-                          .filter((v, i, a) => a.indexOf(v) === i)
-                          .map((val) => (
-                            <Ripple
-                              key={val}
-                              onClick={() => assignStat(ab, val)}
-                              style={styles.statAssign}
-                            >
-                              {val}
-                            </Ripple>
-                          ))
-                      )}
+                    {/* Score controls: - [score] + */}
+                    <div style={{ width: isMobile ? 130 : 150, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                      <Ripple
+                        onClick={() => !atMin && adjustStat(ab, -1)}
+                        style={{
+                          width: pmBtnSize, height: pmBtnSize, borderRadius: "50%",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          background: "var(--dm-surface-bright)", border: "1px solid var(--dm-outline-variant)",
+                          opacity: atMin ? 0.3 : 1, cursor: atMin ? "default" : "pointer",
+                        }}
+                      >
+                        <Icon name="remove" size={18} />
+                      </Ripple>
+                      <span style={{
+                        fontSize: 22, fontWeight: 700, color: "var(--dm-primary)",
+                        minWidth: 36, textAlign: "center",
+                      }}>
+                        {total}
+                      </span>
+                      <Ripple
+                        onClick={() => !atMax && !cantIncrease && adjustStat(ab, 1)}
+                        style={{
+                          width: pmBtnSize, height: pmBtnSize, borderRadius: "50%",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          background: "var(--dm-surface-bright)", border: "1px solid var(--dm-outline-variant)",
+                          opacity: (atMax || cantIncrease) ? 0.3 : 1, cursor: (atMax || cantIncrease) ? "default" : "pointer",
+                        }}
+                      >
+                        <Icon name="add" size={18} />
+                      </Ripple>
+                    </div>
+
+                    {/* Modifier */}
+                    <div style={{
+                      width: 50, textAlign: "right",
+                      fontSize: 20, fontWeight: 700,
+                      color: mod >= 0 ? "#6ecf9a" : "var(--dm-error, #ffb4ab)",
+                    }}>
+                      {mod >= 0 ? `+${mod}` : mod}
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            {unassigned.length === 0 && (
-              <div style={{ textAlign: "center", marginTop: 24 }}>
-                <Ripple onClick={next} style={styles.primaryBtn}>
-                  Continue{" "}
-                  <Icon
-                    name="arrow_forward"
-                    size={18}
-                    style={{ marginLeft: 4 }}
-                  />
-                </Ripple>
-              </div>
-            )}
+            {/* Roll for me button */}
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <Ripple onClick={rollStats} style={{ ...styles.secondaryBtn, gap: 6 }}>
+                <Icon name="casino" size={18} /> Roll for me
+              </Ripple>
+            </div>
           </div>
         );
+      }
 
       case 4: // Alignment
         const currentQ = quizQuestions[quizAnswers.length];
@@ -2356,8 +2394,9 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
             {/* Quiz section */}
             {!quizDone && currentQ && (
               <div style={{
-                background: "var(--dm-surface)", borderRadius: 16, padding: 24,
-                marginBottom: 24, border: "1px solid var(--dm-outline-variant)",
+                background: "rgba(28, 28, 31, 0.65)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+                borderRadius: 16, padding: 24,
+                marginBottom: 24, border: "1px solid rgba(255,255,255,0.08)",
               }}>
                 <div style={{ fontSize: 13, color: "var(--dm-text-muted)", marginBottom: 8 }}>
                   Question {quizAnswers.length + 1} of 2
@@ -2434,7 +2473,8 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                     background:
                       char.alignment === al.id
                         ? al.color + "18"
-                        : "var(--dm-surface)",
+                        : "rgba(28, 28, 31, 0.65)",
+                    backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
                     borderRadius: 16,
                     padding: isMobile ? 12 : 16,
                     textAlign: "center",
@@ -2443,7 +2483,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                         ? `2px solid ${al.color}`
                         : suggestedAlignment === al.id
                           ? `2px solid ${al.color}80`
-                          : "1px solid var(--dm-outline-variant)",
+                          : "1px solid rgba(255,255,255,0.08)",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
@@ -2573,8 +2613,9 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
             <div>
               <h2 style={styles.stepTitle}>Spells</h2>
               <div style={{
-                background: "var(--dm-surface)", borderRadius: 16, padding: 32,
-                textAlign: "center", border: "1px solid var(--dm-outline-variant)",
+                background: "rgba(28, 28, 31, 0.65)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+                borderRadius: 16, padding: 32,
+                textAlign: "center", border: "1px solid rgba(255,255,255,0.08)",
               }}>
                 <Icon name="block" size={48} style={{ color: "var(--dm-text-muted)", marginBottom: 12 }} />
                 <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>
@@ -2612,83 +2653,6 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
           }
         };
 
-        const SpellRow = ({ spell, selected, disabled, onToggle }) => {
-          const chipRef = useRef(null);
-          const { tooltipRef: ttRef, style: ttStyle, calcPos: ttCalc } = useTooltipPos(chipRef, 300);
-          const [tipOpen, setTipOpen] = useState(false);
-          const spellIcon = spell.school === "Evocation" ? "local_fire_department" :
-            spell.school === "Abjuration" ? "shield" :
-            spell.school === "Conjuration" ? "auto_awesome" :
-            spell.school === "Divination" ? "visibility" :
-            spell.school === "Enchantment" ? "psychology" :
-            spell.school === "Illusion" ? "blur_on" :
-            spell.school === "Necromancy" ? "skull" :
-            spell.school === "Transmutation" ? "swap_horiz" : "auto_fix_high";
-
-          return (
-            <div
-              ref={chipRef}
-              onMouseEnter={!isMobile ? () => { setTipOpen(true); ttCalc(); } : undefined}
-              onMouseLeave={!isMobile ? () => setTipOpen(false) : undefined}
-              style={{ position: "relative" }}
-            >
-              <Ripple
-                onClick={onToggle}
-                style={{
-                  padding: "12px 16px", borderRadius: 12,
-                  display: "flex", gap: 12, alignItems: "center",
-                  background: selected ? "var(--dm-primary-container)" : "var(--dm-surface)",
-                  border: selected ? "2px solid var(--dm-primary)" : "1px solid var(--dm-outline-variant)",
-                  opacity: disabled && !selected ? 0.5 : 1,
-                }}
-              >
-                <Icon name={spellIcon} size={20} style={{ color: selected ? "var(--dm-primary)" : "var(--dm-text-muted)", flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: selected ? "var(--dm-on-primary-container)" : "var(--dm-text)" }}>
-                    {spell.name}
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--dm-text-muted)" }}>
-                    {spell.school} · {spell.castingTime}
-                  </div>
-                </div>
-                {selected && <Icon name="check_circle" size={18} style={{ color: "var(--dm-primary)", flexShrink: 0 }} />}
-              </Ripple>
-              {/* Desktop only: hover tooltip */}
-              {!isMobile && tipOpen && (
-                <div ref={ttRef} style={{
-                  ...ttStyle, padding: 14, borderRadius: 12,
-                  background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.5)", zIndex: 100, pointerEvents: "none",
-                }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--dm-primary)", marginBottom: 6 }}>{spell.name}</div>
-                  <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
-                    <span style={{ color: "var(--dm-text-muted)" }}>School: </span>{spell.school}
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
-                    <span style={{ color: "var(--dm-text-muted)" }}>Cast Time: </span>{spell.castingTime}
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
-                    <span style={{ color: "var(--dm-text-muted)" }}>Range: </span>{spell.range}
-                  </div>
-                  {spell.components && (
-                    <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
-                      <span style={{ color: "var(--dm-text-muted)" }}>Components: </span>
-                      {spell.components.map((c) => c === "V" ? "Verbal" : c === "S" ? "Somatic" : c === "M" ? "Material" : c).join(", ")}
-                      {spell.material && <span style={{ color: "var(--dm-text-muted)" }}> ({spell.material})</span>}
-                    </div>
-                  )}
-                  <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
-                    <span style={{ color: "var(--dm-text-muted)" }}>Duration: </span>{spell.duration}{spell.concentration ? " (Concentration)" : ""}
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--dm-text-secondary)", lineHeight: 1.5, marginTop: 6 }}>
-                    {spell.description.length > 200 ? spell.description.slice(0, 200) + "…" : spell.description}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        };
-
         return (
           <div>
             <h2 style={styles.stepTitle}>Choose Spells</h2>
@@ -2718,6 +2682,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                       selected={char.cantrips.includes(sp.id)}
                       disabled={char.cantrips.length >= slots.cantrips}
                       onToggle={() => toggleCantrip(sp.id)}
+                      isMobile={isMobile}
                     />
                   ))}
                 </div>
@@ -2744,6 +2709,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                       selected={char.spells.includes(sp.id)}
                       disabled={char.spells.length >= slots.spells}
                       onToggle={() => toggleSpell(sp.id)}
+                      isMobile={isMobile}
                     />
                   ))}
                 </div>
@@ -3891,10 +3857,51 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
     );
   }
 
+  const landscapeBg = char.race ? RACE_LANDSCAPES[char.race] : null;
+
   return (
-    <div style={ms(isMobile, styles.root, { height: "100dvh" })}>
-      {/* Top bar */}
-      <div style={ms(isMobile, styles.topBar, { height: 56, minHeight: 56 })}>
+    <div style={{ ...ms(isMobile, styles.root, { height: "100dvh" }), position: "relative" }}>
+      {/* Ambient background image — full page behind topbar + body */}
+      {landscapeBg && (
+        <div
+          key={char.race}
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 0,
+            overflow: "hidden",
+            pointerEvents: "none",
+          }}
+        >
+          <img
+            src={landscapeBg}
+            alt=""
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              objectPosition: "center",
+              filter: "saturate(0.6) brightness(0.45)",
+              animation: "m3stepIn 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: `linear-gradient(
+                to bottom,
+                rgba(18, 18, 20, 0.3) 0%,
+                rgba(18, 18, 20, 0.05) 25%,
+                rgba(18, 18, 20, 0.1) 65%,
+                rgba(18, 18, 20, 0.6) 100%
+              )`,
+            }}
+          />
+        </div>
+      )}
+      {/* Top bar — desktop: back + title + steps + name input in one row */}
+      <div style={{ ...ms(isMobile, styles.topBar, { height: 56, minHeight: 56 }), position: "relative", zIndex: 2 }}>
         <Ripple onClick={onBack} style={styles.backBtn}>
           <Icon name="arrow_back" />
         </Ripple>
@@ -3907,96 +3914,138 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
               style={{ color: "var(--dm-primary)" }}
             />
             <span style={{ fontSize: 18, fontWeight: 500 }}>Character Creator</span>
-            <div style={{ flex: 1 }} />
+            <div style={{ flex: 1, display: "flex", justifyContent: "center", gap: 4 }}>
+              {STEPS.map((s, i) => {
+                const done = stepComplete(i);
+                const active = i === step;
+                return (
+                  <Ripple
+                    key={s}
+                    onClick={() => { haptic.trigger("selection"); setStep(i); }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "8px 14px",
+                      borderRadius: 20,
+                      background: active ? "var(--dm-secondary-container)" : "transparent",
+                      color: active
+                        ? "var(--dm-on-secondary-container)"
+                        : done ? "var(--dm-primary)" : "var(--dm-text-muted)",
+                      fontWeight: active ? 600 : 400,
+                      fontSize: 13,
+                      transition: "all 0.2s",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 24, height: 24, borderRadius: 12,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 12, fontWeight: 600,
+                        background: done
+                          ? "var(--dm-primary)"
+                          : active ? "var(--dm-on-secondary-container)"
+                          : showValidation && !done ? "var(--dm-error-container, #3a1510)" : "var(--dm-surface-bright)",
+                        color: done
+                          ? "var(--dm-on-primary)"
+                          : active ? "var(--dm-secondary-container)"
+                          : showValidation && !done ? "var(--dm-error, #ffb4ab)" : "var(--dm-text-muted)",
+                      }}
+                    >
+                      {done ? <Icon name="check" size={14} /> : showValidation && !done ? <Icon name="priority_high" size={14} /> : i + 1}
+                    </span>
+                    {s}
+                  </Ripple>
+                );
+              })}
+            </div>
           </>
         )}
         <input
+          ref={nameInputRef}
           placeholder="Character name"
           value={char.name}
           onChange={(e) => update("name", e.target.value)}
           className="m3input"
-          style={isMobile
-            ? { flex: 1, minWidth: 0, fontSize: 14, textAlign: "center" }
-            : { width: 220, fontSize: 14, textAlign: "center" }
-          }
+          style={{
+            ...(isMobile
+              ? { flex: 1, minWidth: 0, fontSize: 14, textAlign: "center" }
+              : { width: 220, fontSize: 14, textAlign: "center" }),
+            ...(showValidation && !char.name.trim() ? {
+              borderColor: "var(--dm-error, #ffb4ab)",
+              boxShadow: "0 0 0 1px var(--dm-error, #ffb4ab)",
+            } : {}),
+          }}
         />
       </div>
 
-      {/* Step indicator */}
-      <div
-        ref={stepBarRef}
-        className={isMobile ? "mobile-hide-scrollbar" : undefined}
-        style={ms(isMobile, styles.stepBar, {
-          flexWrap: "nowrap",
-          justifyContent: "flex-start",
-          overflowX: "auto",
-          scrollSnapType: "x mandatory",
-          WebkitOverflowScrolling: "touch",
-          padding: "0 12px 10px",
-          gap: 2,
-        })}
-      >
-        {STEPS.map((s, i) => {
-          const done = stepComplete(i);
-          const active = i === step;
-          return (
-            <Ripple
-              key={s}
-              onClick={() => { haptic.trigger("selection"); setStep(i); }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: isMobile ? 0 : 8,
-                padding: isMobile ? "8px 10px" : "8px 14px",
-                borderRadius: 20,
-                background: active
-                  ? "var(--dm-secondary-container)"
-                  : "transparent",
-                color: active
-                  ? "var(--dm-on-secondary-container)"
-                  : done
-                    ? "var(--dm-primary)"
-                    : "var(--dm-text-muted)",
-                fontWeight: active ? 600 : 400,
-                fontSize: 13,
-                transition: "all 0.2s",
-                flexShrink: 0,
-                scrollSnapAlign: isMobile ? "center" : undefined,
-              }}
-            >
-              <span
+      {/* Step indicator — mobile only (separate row) */}
+      {isMobile && (
+        <div
+          ref={stepBarRef}
+          className="mobile-hide-scrollbar"
+          style={{ position: "relative", zIndex: 2,
+            ...styles.stepBar,
+            flexWrap: "nowrap",
+            justifyContent: "flex-start",
+            overflowX: "auto",
+            scrollSnapType: "x mandatory",
+            WebkitOverflowScrolling: "touch",
+            padding: "0 12px 10px",
+            gap: 2,
+          }}
+        >
+          {STEPS.map((s, i) => {
+            const done = stepComplete(i);
+            const active = i === step;
+            return (
+              <Ripple
+                key={s}
+                onClick={() => { haptic.trigger("selection"); setStep(i); }}
                 style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: 12,
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  background: done
-                    ? "var(--dm-primary)"
-                    : active
-                      ? "var(--dm-on-secondary-container)"
-                      : "var(--dm-surface-bright)",
-                  color: done
-                    ? "var(--dm-on-primary)"
-                    : active
-                      ? "var(--dm-secondary-container)"
-                      : "var(--dm-text-muted)",
+                  gap: 0,
+                  padding: "8px 10px",
+                  borderRadius: 20,
+                  background: active ? "var(--dm-secondary-container)" : "transparent",
+                  color: active
+                    ? "var(--dm-on-secondary-container)"
+                    : done ? "var(--dm-primary)" : "var(--dm-text-muted)",
+                  fontWeight: active ? 600 : 400,
+                  fontSize: 13,
+                  transition: "all 0.2s",
+                  flexShrink: 0,
+                  scrollSnapAlign: "center",
                 }}
               >
-                {done ? <Icon name="check" size={14} /> : i + 1}
-              </span>
-              {!isMobile && s}
-            </Ripple>
-          );
-        })}
-      </div>
+                <span
+                  style={{
+                    width: 24, height: 24, borderRadius: 12,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 12, fontWeight: 600,
+                    background: done
+                      ? "var(--dm-primary)"
+                      : active ? "var(--dm-on-secondary-container)"
+                      : showValidation && !done ? "var(--dm-error-container, #3a1510)" : "var(--dm-surface-bright)",
+                    color: done
+                      ? "var(--dm-on-primary)"
+                      : active ? "var(--dm-secondary-container)"
+                      : showValidation && !done ? "var(--dm-error, #ffb4ab)" : "var(--dm-text-muted)",
+                  }}
+                >
+                  {done ? <Icon name="check" size={14} /> : showValidation && !done ? <Icon name="priority_high" size={14} /> : i + 1}
+                </span>
+              </Ripple>
+            );
+          })}
+        </div>
+      )}
 
-      <div style={styles.body}>
+      <div style={{ ...styles.body, position: "relative", zIndex: 1 }}>
         {/* Main content */}
-        <div style={ms(isMobile, styles.main, { padding: "16px 16px 80px", WebkitOverflowScrolling: "touch" })}>
+        <div style={{ ...ms(isMobile, styles.main, { padding: "16px 16px 80px", WebkitOverflowScrolling: "touch" }), position: "relative", zIndex: 1 }}>
           <div
             key={step}
             style={isMobile ? {
@@ -4007,7 +4056,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
           </div>
 
           {/* Nav buttons — inline on desktop */}
-          {!isMobile && (
+          {!isMobile && (<>
             <div
               style={{
                 display: "flex",
@@ -4027,41 +4076,68 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
                   Next{" "}
                   <Icon name="arrow_forward" size={18} style={{ marginLeft: 4 }} />
                 </Ripple>
-              ) : (
-                <Ripple
-                  onClick={() => {
-                    if (!char.name.trim()) return;
-                    const chars = loadCharacters();
-                    const charToSave = { ...char, assignedStats, id: editId || char.id || Date.now().toString() };
-                    const existing = chars.findIndex((c) => c.id === charToSave.id);
-                    if (existing >= 0) {
-                      chars[existing] = charToSave;
-                    } else {
-                      chars.push(charToSave);
-                    }
-                    saveCharacters(chars);
-                    syncCharacterToParty(charToSave);
-                    localStorage.removeItem(STORAGE_KEY);
-                    haptic.trigger("success");
-                    setFinished(true);
-                  }}
-                  style={{
-                    ...styles.primaryBtn,
-                    opacity: char.name.trim() ? 1 : 0.4,
-                    cursor: char.name.trim() ? "pointer" : "default",
-                  }}
-                >
-                  <Icon name="check" size={18} style={{ marginRight: 4 }} />{" "}
-                  Finish
-                </Ripple>
-              )}
+              ) : (() => {
+                const missing = getMissing();
+                const canFinish = missing.length === 0;
+                return (
+                  <Ripple
+                    onClick={() => {
+                      if (!canFinish) {
+                        setShowValidation(true);
+                        haptic.trigger("error");
+                        if (!char.name.trim()) nameInputRef.current?.focus();
+                        return;
+                      }
+                      const chars = loadCharacters();
+                      const charToSave = { ...char, assignedStats, id: editId || char.id || Date.now().toString() };
+                      const existing = chars.findIndex((c) => c.id === charToSave.id);
+                      if (existing >= 0) {
+                        chars[existing] = charToSave;
+                      } else {
+                        chars.push(charToSave);
+                      }
+                      saveCharacters(chars);
+                      syncCharacterToParty(charToSave);
+                      localStorage.removeItem(STORAGE_KEY);
+                      haptic.trigger("success");
+                      setFinished(true);
+                    }}
+                    style={{
+                      ...styles.primaryBtn,
+                      opacity: canFinish ? 1 : 0.4,
+                      cursor: canFinish ? "pointer" : "default",
+                    }}
+                  >
+                    <Icon name="check" size={18} style={{ marginRight: 4 }} />{" "}
+                    Finish
+                  </Ripple>
+                );
+              })()}
             </div>
-          )}
+            {showValidation && getMissing().length > 0 && (
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "8px 14px",
+                borderRadius: 12,
+                background: "var(--dm-error-container, #3a1510)",
+                color: "var(--dm-error, #ffb4ab)",
+                fontSize: 13,
+                fontWeight: 500,
+                marginTop: 8,
+                animation: "m3stepIn 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+              }}>
+                <Icon name="error" size={18} />
+                <span>Required: {getMissing().join(", ")}</span>
+              </div>
+            )}
+          </>)}
         </div>
 
         {/* Summary panel — desktop only */}
         {!isMobile && (
-          <div style={styles.summary}>
+          <div style={{ ...styles.summary, position: "relative", zIndex: 1 }}>
             <div
               style={{
                 fontSize: 13,
@@ -4216,7 +4292,7 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
       </div>
 
       {/* Mobile fixed nav buttons */}
-      {isMobile && (
+      {isMobile && (<>
         <div
           style={{
             position: "fixed",
@@ -4243,37 +4319,146 @@ function CharacterCreator({ onBack, listMode, onNewCharacter, onEditCharacter, e
               Next{" "}
               <Icon name="arrow_forward" size={18} style={{ marginLeft: 4 }} />
             </Ripple>
-          ) : (
-            <Ripple
-              onClick={() => {
-                if (!char.name.trim()) return;
-                const chars = loadCharacters();
-                const charToSave = { ...char, assignedStats, id: editId || char.id || Date.now().toString() };
-                const existing = chars.findIndex((c) => c.id === charToSave.id);
-                if (existing >= 0) {
-                  chars[existing] = charToSave;
-                } else {
-                  chars.push(charToSave);
-                }
-                saveCharacters(chars);
-                syncCharacterToParty(charToSave);
-                localStorage.removeItem(STORAGE_KEY);
-                haptic.trigger("success");
-                setFinished(true);
-              }}
-              style={{
-                ...styles.primaryBtn,
-                flex: 1,
-                justifyContent: "center",
-                padding: "14px 24px",
-                opacity: char.name.trim() ? 1 : 0.4,
-                cursor: char.name.trim() ? "pointer" : "default",
-              }}
-            >
-              <Icon name="check" size={18} style={{ marginRight: 4 }} />{" "}
-              Finish
-            </Ripple>
+          ) : (() => {
+            const missing = getMissing();
+            const canFinish = missing.length === 0;
+            return (
+              <Ripple
+                onClick={() => {
+                  if (!canFinish) {
+                    setShowValidation(true);
+                    haptic.trigger("error");
+                    if (!char.name.trim()) nameInputRef.current?.focus();
+                    return;
+                  }
+                  const chars = loadCharacters();
+                  const charToSave = { ...char, assignedStats, id: editId || char.id || Date.now().toString() };
+                  const existing = chars.findIndex((c) => c.id === charToSave.id);
+                  if (existing >= 0) {
+                    chars[existing] = charToSave;
+                  } else {
+                    chars.push(charToSave);
+                  }
+                  saveCharacters(chars);
+                  syncCharacterToParty(charToSave);
+                  localStorage.removeItem(STORAGE_KEY);
+                  haptic.trigger("success");
+                  setFinished(true);
+                }}
+                style={{
+                  ...styles.primaryBtn,
+                  flex: 1,
+                  justifyContent: "center",
+                  padding: "14px 24px",
+                  opacity: canFinish ? 1 : 0.4,
+                  cursor: canFinish ? "pointer" : "default",
+                }}
+              >
+                <Icon name="check" size={18} style={{ marginRight: 4 }} />{" "}
+                Finish
+              </Ripple>
+            );
+          })()}
+        </div>
+        {showValidation && getMissing().length > 0 && (
+          <div style={{
+            position: "fixed",
+            bottom: 68,
+            left: 16,
+            right: 16,
+            zIndex: 21,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "10px 14px",
+            borderRadius: 12,
+            background: "var(--dm-error-container, #3a1510)",
+            color: "var(--dm-error, #ffb4ab)",
+            fontSize: 13,
+            fontWeight: 500,
+            animation: "m3stepIn 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+          }}>
+            <Icon name="error" size={18} />
+            <span>Required: {getMissing().join(", ")}</span>
+          </div>
+        )}
+      </>)}
+    </div>
+  );
+}
+
+function SpellRow({ spell, selected, disabled, onToggle, isMobile }) {
+  const chipRef = useRef(null);
+  const { tooltipRef: ttRef, style: ttStyle, calcPos: ttCalc } = useTooltipPos(chipRef, 300);
+  const [tipOpen, setTipOpen] = useState(false);
+  const spellIcon = spell.school === "Evocation" ? "local_fire_department" :
+    spell.school === "Abjuration" ? "shield" :
+    spell.school === "Conjuration" ? "auto_awesome" :
+    spell.school === "Divination" ? "visibility" :
+    spell.school === "Enchantment" ? "psychology" :
+    spell.school === "Illusion" ? "blur_on" :
+    spell.school === "Necromancy" ? "skull" :
+    spell.school === "Transmutation" ? "swap_horiz" : "auto_fix_high";
+
+  return (
+    <div
+      ref={chipRef}
+      onMouseEnter={!isMobile ? () => { setTipOpen(true); ttCalc(); } : undefined}
+      onMouseLeave={!isMobile ? () => setTipOpen(false) : undefined}
+      style={{ position: "relative" }}
+    >
+      <Ripple
+        onClick={onToggle}
+        style={{
+          padding: "12px 16px", borderRadius: 12,
+          display: "flex", gap: 12, alignItems: "center",
+          background: selected ? "var(--dm-primary-container)" : "rgba(28, 28, 31, 0.65)",
+          backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+          border: selected ? "2px solid var(--dm-primary)" : "1px solid rgba(255,255,255,0.08)",
+          opacity: disabled && !selected ? 0.5 : 1,
+        }}
+      >
+        <Icon name={spellIcon} size={20} style={{ color: selected ? "var(--dm-primary)" : "var(--dm-text-muted)", flexShrink: 0 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 500, color: selected ? "var(--dm-on-primary-container)" : "var(--dm-text)" }}>
+            {spell.name}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--dm-text-muted)" }}>
+            {spell.school} · {spell.castingTime}
+          </div>
+        </div>
+        {selected && <Icon name="check_circle" size={18} style={{ color: "var(--dm-primary)", flexShrink: 0 }} />}
+      </Ripple>
+      {!isMobile && tipOpen && (
+        <div ref={ttRef} style={{
+          ...ttStyle, padding: 14, borderRadius: 12,
+          background: "var(--dm-surface-brighter)", border: "1px solid var(--dm-outline-variant)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.5)", zIndex: 100, pointerEvents: "none",
+        }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--dm-primary)", marginBottom: 6 }}>{spell.name}</div>
+          <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+            <span style={{ color: "var(--dm-text-muted)" }}>School: </span>{spell.school}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+            <span style={{ color: "var(--dm-text-muted)" }}>Cast Time: </span>{spell.castingTime}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+            <span style={{ color: "var(--dm-text-muted)" }}>Range: </span>{spell.range}
+          </div>
+          {spell.components && (
+            <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+              <span style={{ color: "var(--dm-text-muted)" }}>Components: </span>
+              {spell.components.map((c) => c === "V" ? "Verbal" : c === "S" ? "Somatic" : c === "M" ? "Material" : c).join(", ")}
+              {spell.material && <span style={{ color: "var(--dm-text-muted)" }}> ({spell.material})</span>}
+            </div>
           )}
+          <div style={{ fontSize: 12, color: "var(--dm-text)", marginBottom: 3 }}>
+            <span style={{ color: "var(--dm-text-muted)" }}>Duration: </span>{spell.duration}{spell.concentration ? " (Concentration)" : ""}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--dm-text-secondary)", lineHeight: 1.5, marginTop: 6 }}>
+            {spell.description.length > 200 ? spell.description.slice(0, 200) + "…" : spell.description}
+          </div>
         </div>
       )}
     </div>
@@ -4351,7 +4536,10 @@ const styles = {
     alignItems: "center",
     padding: "0 16px",
     gap: 10,
-    background: "var(--dm-bg)",
+    background: "rgba(28, 28, 31, 0.75)",
+    backdropFilter: "blur(16px)",
+    WebkitBackdropFilter: "blur(16px)",
+    borderBottom: "1px solid rgba(255,255,255,0.06)",
     zIndex: 10,
   },
   backBtn: {
@@ -4386,7 +4574,9 @@ const styles = {
     minWidth: 260,
     padding: 20,
     overflowY: "auto",
-    background: "var(--dm-surface)",
+    background: "rgba(28, 28, 31, 0.85)",
+    backdropFilter: "blur(12px)",
+    WebkitBackdropFilter: "blur(12px)",
     borderRadius: "28px 0 0 0",
   },
   stepTitle: {
@@ -4440,7 +4630,10 @@ const styles = {
   secondaryBtn: {
     padding: "10px 24px",
     borderRadius: 20,
-    border: "1px solid var(--dm-outline)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    background: "rgba(28, 28, 31, 0.6)",
+    backdropFilter: "blur(12px)",
+    WebkitBackdropFilter: "blur(12px)",
     color: "var(--dm-primary)",
     fontWeight: 500,
     fontSize: 14,
