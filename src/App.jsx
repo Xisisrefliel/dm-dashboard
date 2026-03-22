@@ -156,11 +156,11 @@ export default function App() {
       <div
         style={{
           height: "100vh",
-          background: "#111611",
+          background: "#141518",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "#9fd494",
+          color: "#c7c9d1",
           fontFamily: "'Inter',system-ui,sans-serif",
         }}
       >
