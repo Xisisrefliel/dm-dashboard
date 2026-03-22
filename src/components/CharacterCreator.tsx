@@ -14,6 +14,14 @@ import {
   STORAGE_KEY,
 } from "../utils/characterStorage.ts";
 import { RACE_LANDSCAPES } from "../data/character-images.ts";
+
+// Prefetch all race landscape backgrounds so they're cached before selection
+if (typeof window !== "undefined") {
+  Object.values(RACE_LANDSCAPES).forEach((src) => {
+    const img = new window.Image();
+    img.src = src as string;
+  });
+}
 import {
   STEPS,
   CLASS_SPELL_SLOTS,

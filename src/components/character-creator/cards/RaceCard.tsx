@@ -1,6 +1,5 @@
 import Icon from "../../ui/Icon.tsx";
 import Ripple from "../../ui/Ripple.tsx";
-import TraitChip from "./TraitChip.tsx";
 import { RACE_IMAGES } from "../../../data/character-images.ts";
 import { RACE_ICONS } from "../../../data/character-constants.ts";
 import type { SrdRace } from "../../../types/index.ts";
@@ -36,6 +35,7 @@ export default function RaceCard({ race, selected, onSelect }: Props) {
             <img
               src={img}
               alt={race.name}
+              loading="lazy"
               style={{
                 width: "100%",
                 height: "100%",
@@ -84,18 +84,10 @@ export default function RaceCard({ race, selected, onSelect }: Props) {
           style={{
             fontSize: 13,
             color: "var(--dm-text-secondary)",
-            marginBottom: 8,
           }}
         >
           Speed {race.speed} ft · {race.size}
         </div>
-        {race.traits?.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {race.traits.map((t) => (
-              <TraitChip key={t.name} trait={t} />
-            ))}
-          </div>
-        )}
       </div>
     </Ripple>
   );

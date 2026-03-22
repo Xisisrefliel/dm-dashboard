@@ -45,7 +45,7 @@ export default function ClassStep({ char, update, next, prev, haptic, previewCla
 
   const closePreview = (cb?: () => void): void => {
     setClosing(true);
-    setTimeout(() => { setClosing(false); setPreviewClass(null); cb?.(); }, 250);
+    setTimeout(() => { setClosing(false); setPreviewClass(null); update("class", ""); update("skills", []); update("equipChoices", {}); cb?.(); }, 250);
   };
 
   const toggleSkill = (skill: string): void => {
@@ -210,7 +210,7 @@ export default function ClassStep({ char, update, next, prev, haptic, previewCla
                     scrollSnapAlign: "start",
                   }}
                 >
-                  {img && <img src={img} alt={cls.name} style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />}
+                  {img && <img src={img} alt={cls.name} loading="lazy" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />}
                   <div style={{ padding: "6px 0", textAlign: "center", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
                     {cls.name}
                   </div>

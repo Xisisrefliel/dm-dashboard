@@ -39,7 +39,7 @@ export default function RaceStep({ char, update, next, prev, haptic, previewRace
 
   const closePreview = (cb?: () => void): void => {
     setClosing(true);
-    setTimeout(() => { setClosing(false); setPreviewRace(null); cb?.(); }, 250);
+    setTimeout(() => { setClosing(false); setPreviewRace(null); update("race", ""); cb?.(); }, 250);
   };
 
   if (pRace) {
@@ -162,7 +162,7 @@ export default function RaceStep({ char, update, next, prev, haptic, previewRace
                     scrollSnapAlign: "start",
                   }}
                 >
-                  {img && <img src={img} alt={race.name} style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />}
+                  {img && <img src={img} alt={race.name} loading="lazy" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />}
                   <div style={{ padding: "6px 0", textAlign: "center", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
                     {race.name}
                   </div>

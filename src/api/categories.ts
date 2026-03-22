@@ -1,56 +1,76 @@
-import { sql } from "../db";
+import { db } from "../db";
+import { campaigns, categories } from "../db/schema";
+import { eq, and, sql } from "drizzle-orm";
 import { getSession } from "./auth";
 
 export const categoryRoutes = {
   "/api/campaigns/:campaignId/categories": {
     async PUT(req: Request) {
       const user = await getSession(req);
-      if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+      if (!user)
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
 
       const { campaignId } = (req as any).params;
 
-      const [campaign] = await sql`
-        SELECT id FROM campaigns WHERE id = ${campaignId} AND user_id = ${user.id}
-      ` as any[];
+      const [campaign] = await db
+        .select({ id: campaigns.id })
+        .from(campaigns)
+        .where(and(eq(campaigns.id, campaignId), eq(campaigns.userId, user.id)));
       if (!campaign) {
-        return Response.json({ error: "Campaign not found" }, { status: 404 });
+        return Response.json(
+          { error: "Campaign not found" },
+          { status: 404 },
+        );
       }
 
-      const { categories } = await req.json();
-      if (!Array.isArray(categories)) {
+      const { categories: catList } = await req.json();
+      if (!Array.isArray(catList)) {
         return Response.json(
           { error: "categories must be an array" },
           { status: 400 },
         );
       }
 
-      await sql.begin(async (tx: any) => {
-        await tx`DELETE FROM categories WHERE campaign_id = ${campaignId}`;
-        for (let i = 0; i < categories.length; i++) {
-          const cat = categories[i]!;
-          await tx`
-            INSERT INTO categories (campaign_id, key, label, icon, sort_order)
-            VALUES (${campaignId}, ${cat.key}, ${cat.label}, ${cat.icon || "folder"}, ${i})
-          `;
+      await db.transaction(async (tx) => {
+        await tx
+          .delete(categories)
+          .where(eq(categories.campaignId, campaignId));
+        for (let i = 0; i < catList.length; i++) {
+          const cat = catList[i];
+          await tx.insert(categories).values({
+            campaignId,
+            key: cat.key,
+            label: cat.label,
+            icon: cat.icon || "folder",
+            sortOrder: i,
+          });
         }
       });
 
-      await sql`UPDATE campaigns SET updated_at = NOW() WHERE id = ${campaignId}`;
+      await db
+        .update(campaigns)
+        .set({ updatedAt: new Date() })
+        .where(eq(campaigns.id, campaignId));
 
       return Response.json({ ok: true });
     },
 
     async POST(req: Request) {
       const user = await getSession(req);
-      if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+      if (!user)
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
 
       const { campaignId } = (req as any).params;
 
-      const [campaign] = await sql`
-        SELECT id FROM campaigns WHERE id = ${campaignId} AND user_id = ${user.id}
-      ` as any[];
+      const [campaign] = await db
+        .select({ id: campaigns.id })
+        .from(campaigns)
+        .where(and(eq(campaigns.id, campaignId), eq(campaigns.userId, user.id)));
       if (!campaign) {
-        return Response.json({ error: "Campaign not found" }, { status: 404 });
+        return Response.json(
+          { error: "Campaign not found" },
+          { status: 404 },
+        );
       }
 
       const { key, label, icon } = await req.json();
@@ -61,19 +81,30 @@ export const categoryRoutes = {
         );
       }
 
-      const [maxOrder] = await sql`
-        SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_order
-        FROM categories WHERE campaign_id = ${campaignId}
-      ` as any[];
+      const [maxOrder] = await db
+        .select({
+          nextOrder: sql<number>`COALESCE(MAX(${categories.sortOrder}), -1) + 1`,
+        })
+        .from(categories)
+        .where(eq(categories.campaignId, campaignId));
 
-      const [category] = await sql`
-        INSERT INTO categories (campaign_id, key, label, icon, sort_order)
-        VALUES (${campaignId}, ${key}, ${label}, ${icon || "folder"}, ${maxOrder!.next_order})
-        RETURNING key, label, icon
-      ` as any[];
+      const [category] = await db
+        .insert(categories)
+        .values({
+          campaignId,
+          key,
+          label,
+          icon: icon || "folder",
+          sortOrder: maxOrder!.nextOrder,
+        })
+        .returning({
+          key: categories.key,
+          label: categories.label,
+          icon: categories.icon,
+        });
 
       return Response.json(
-        { key: category.key, label: category.label, icon: category.icon },
+        { key: category!.key, label: category!.label, icon: category!.icon },
         { status: 201 },
       );
     },
