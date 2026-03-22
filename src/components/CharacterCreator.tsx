@@ -378,10 +378,11 @@ function CharacterCreator({
       return;
     }
     const chars = loadCharacters();
+    const savedId = editId || char.id || Date.now().toString();
     const charToSave = {
       ...char,
       assignedStats: assignedStats as unknown as AbilityScores,
-      id: editId || char.id || Date.now().toString(),
+      id: savedId,
     };
     const existing = chars.findIndex((c) => c.id === charToSave.id);
     if (existing >= 0) {
@@ -393,6 +394,8 @@ function CharacterCreator({
     syncCharacterToParty(charToSave);
     localStorage.removeItem(STORAGE_KEY);
     haptic.trigger("success");
+    // Update char state with the persisted ID so subsequent saves won't duplicate
+    setChar((c) => ({ ...c, id: savedId }));
     setFinished(true);
   };
 
@@ -504,6 +507,13 @@ function CharacterCreator({
     }
   };
 
+  // Go back to step-by-step wizard for editing
+  const handleEditSteps = () => {
+    haptic.trigger("light");
+    setFinished(false);
+    setStep(0);
+  };
+
   // Character Sheet routing
   if (finished) {
     return (
@@ -520,6 +530,7 @@ function CharacterCreator({
         getRacialBonus={getRacialBonus}
         isMobile={isMobile}
         haptic={haptic}
+        onEditSteps={handleEditSteps}
       />
     );
   }

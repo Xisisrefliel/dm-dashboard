@@ -93,9 +93,10 @@ interface CharacterSheetProps {
   getRacialBonus: (ability: string) => number;
   isMobile: boolean;
   haptic: HapticAPI;
+  onEditSteps?: () => void;
 }
 
-export default function CharacterSheet({ char, update, onBack, editId, assignedStats, setAssignedStats, raceData, classData, computedEquipment, getRacialBonus, isMobile, haptic }: CharacterSheetProps) {
+export default function CharacterSheet({ char, update, onBack, editId, assignedStats, setAssignedStats, raceData, classData, computedEquipment, getRacialBonus, isMobile, haptic, onEditSteps }: CharacterSheetProps) {
   const [editing, setEditing] = useState<boolean>(false);
   const [attackRoll, setAttackRoll] = useState<AttackRollResult | null>(null);
   const [openPanel, setOpenPanel] = useState<string | null>(null);
@@ -779,7 +780,7 @@ export default function CharacterSheet({ char, update, onBack, editId, assignedS
             </>
           ) : (
             <>
-              <Ripple onClick={() => { haptic.trigger("light"); setEditing(true); }} style={{ ...styles.secondaryBtn, gap: 6 }}>
+              <Ripple onClick={() => { onEditSteps ? onEditSteps() : (haptic.trigger("light"), setEditing(true)); }} style={{ ...styles.secondaryBtn, gap: 6 }}>
                 <Icon name="edit" size={16} /> Edit Character
               </Ripple>
               <Ripple onClick={() => onBack()} style={{ ...styles.primaryBtn, gap: 6 }}>
