@@ -27,7 +27,7 @@ export default function ClassCard({ cls, selected, onSelect }) {
       >
         {img ? (
           <div style={{ width: "100%", aspectRatio: "1", overflow: "hidden" }}>
-            <img src={img} alt={cls.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            <img src={img} alt={cls.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
           </div>
         ) : (
           <div style={{ width: 52, height: 52, borderRadius: 16, background: "var(--dm-surface-bright)", display: "flex", alignItems: "center", justifyContent: "center", margin: "20px 20px 0" }}>

@@ -29,6 +29,7 @@ export default function RaceCard({ race, selected, onSelect }) {
             <img
               src={img}
               alt={race.name}
+              loading="lazy"
               style={{
                 width: "100%",
                 height: "100%",
