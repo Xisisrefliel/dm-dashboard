@@ -1,6 +1,5 @@
 import Icon from "../../ui/Icon.jsx";
 import Ripple from "../../ui/Ripple.jsx";
-import TraitChip from "./TraitChip.jsx";
 import { RACE_IMAGES } from "../../../data/character-images.js";
 import { RACE_ICONS } from "../../../data/character-constants.js";
 
@@ -29,6 +28,7 @@ export default function RaceCard({ race, selected, onSelect }) {
             <img
               src={img}
               alt={race.name}
+              loading="lazy"
               style={{
                 width: "100%",
                 height: "100%",
@@ -77,18 +77,10 @@ export default function RaceCard({ race, selected, onSelect }) {
           style={{
             fontSize: 13,
             color: "var(--dm-text-secondary)",
-            marginBottom: 8,
           }}
         >
           Speed {race.speed} ft · {race.size}
         </div>
-        {race.traits?.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {race.traits.map((t) => (
-              <TraitChip key={t.name} trait={t} />
-            ))}
-          </div>
-        )}
       </div>
     </Ripple>
   );

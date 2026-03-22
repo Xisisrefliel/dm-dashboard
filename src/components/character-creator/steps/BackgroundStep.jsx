@@ -23,7 +23,7 @@ export default function BackgroundStep({ char, update, next, prev, haptic, previ
 
   const closePreview = (cb) => {
     setClosing(true);
-    setTimeout(() => { setClosing(false); setPreviewBg(null); cb?.(); }, 250);
+    setTimeout(() => { setClosing(false); setPreviewBg(null); update("background", ""); cb?.(); }, 250);
   };
 
   if (pBg) {
@@ -124,7 +124,7 @@ export default function BackgroundStep({ char, update, next, prev, haptic, previ
                   }}
                 >
                   {img ? (
-                    <img src={img} alt={bg.name} style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />
+                    <img src={img} alt={bg.name} loading="lazy" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />
                   ) : (
                     <div style={{ width: "100%", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--dm-surface-bright)" }}>
                       <Icon name={bg.icon} size={28} style={{ color: "var(--dm-primary)" }} />
@@ -178,7 +178,7 @@ export default function BackgroundStep({ char, update, next, prev, haptic, previ
             >
               {img ? (
                 <div style={{ width: "100%", aspectRatio: "1", overflow: "hidden" }}>
-                  <img src={img} alt={bg.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  <img src={img} alt={bg.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                 </div>
               ) : (
                 <div style={{ ...styles.cardIconWrap, margin: "20px 20px 0" }}>
