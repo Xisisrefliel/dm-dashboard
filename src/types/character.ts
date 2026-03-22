@@ -36,6 +36,7 @@ export interface Character {
   skills: string[];
   inventory: InventoryItem[];
   acOverride: number | null;
+  generatedImage?: string;
 }
 
 export interface PartySnapshot {

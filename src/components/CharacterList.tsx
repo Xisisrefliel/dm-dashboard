@@ -92,7 +92,7 @@ function CharacterList({ onBack, onNewCharacter, onEditCharacter }: CharacterLis
             {characters.map((ch) => {
               const rd = racesData.find((r) => r.id === ch.race);
               const cd = classesData.find((c) => c.id === ch.class);
-              const img = ch.class ? (CLASS_IMAGES as Record<string, string>)[ch.class] : (ch.race ? (RACE_IMAGES as Record<string, string>)[ch.race] : null);
+              const img = ch.generatedImage || (ch.class ? (CLASS_IMAGES as Record<string, string>)[ch.class] : (ch.race ? (RACE_IMAGES as Record<string, string>)[ch.race] : null));
               return (
                 <div key={ch.id} style={{
                   background: "var(--dm-surface)", borderRadius: 16, overflow: "hidden",
@@ -102,7 +102,7 @@ function CharacterList({ onBack, onNewCharacter, onEditCharacter }: CharacterLis
                     display: "flex", flexDirection: "column", width: "100%",
                   }}>
                     {img && (
-                      <div style={{ width: "100%", height: isMobile ? 120 : 160, overflow: "hidden" }}>
+                      <div style={{ width: "100%", aspectRatio: ch.generatedImage ? "3/4" : undefined, height: ch.generatedImage ? undefined : (isMobile ? 120 : 160), overflow: "hidden" }}>
                         <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />
                       </div>
                     )}

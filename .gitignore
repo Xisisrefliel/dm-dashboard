@@ -35,3 +35,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Raw SRD source data (processed files are committed)
 src/data/raw/
+
+# AI-generated character images
+generated-images/
