@@ -10,7 +10,32 @@ import { partyRoutes } from "./api/party";
 // Run migrations on startup
 await migrate();
 
+const DEFAULT_PORT = 3000;
+const MAX_PORT_ATTEMPTS = 10;
+
+function isPortInUse(port: number): boolean {
+  try {
+    const testServer = Bun.serve({ port, fetch: () => new Response() });
+    testServer.stop(true);
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+function findAvailablePort(startPort: number): number {
+  for (let port = startPort; port < startPort + MAX_PORT_ATTEMPTS; port++) {
+    if (!isPortInUse(port)) return port;
+  }
+  throw new Error(
+    `No available port found in range ${startPort}-${startPort + MAX_PORT_ATTEMPTS - 1}`
+  );
+}
+
+const port = findAvailablePort(Number(process.env.PORT) || DEFAULT_PORT);
+
 const server = serve({
+  port,
   routes: {
     ...authRoutes,
     ...campaignRoutes,
