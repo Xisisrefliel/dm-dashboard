@@ -78,10 +78,10 @@ export const authRoutes = {
       const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
       await db
         .insert(sessions)
-        .values({ userId: user.id, token, expiresAt });
+        .values({ userId: user!.id, token, expiresAt });
 
       return Response.json(
-        { id: user.id, email: user.email, displayName: user.displayName },
+        { id: user!.id, email: user!.email, displayName: user!.displayName },
         {
           status: 201,
           headers: { "Set-Cookie": sessionCookie(token, SESSION_TTL_S) },

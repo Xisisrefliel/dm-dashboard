@@ -54,7 +54,7 @@ export const partyRoutes = {
         });
 
       return Response.json(
-        { id: invite.id, token: invite.token, expiresAt: invite.expiresAt },
+        { id: invite!.id, token: invite!.token, expiresAt: invite!.expiresAt },
         { status: 201 },
       );
     },
@@ -274,7 +274,7 @@ export const partyRoutes = {
         .set({ useCount: sql`${inviteTokens.useCount} + 1` })
         .where(eq(inviteTokens.id, invite.id));
 
-      return Response.json({ ok: true, memberId: member.id });
+      return Response.json({ ok: true, memberId: member!.id });
     },
   },
 

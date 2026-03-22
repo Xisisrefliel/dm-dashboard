@@ -95,7 +95,7 @@ export const categoryRoutes = {
           key,
           label,
           icon: icon || "folder",
-          sortOrder: maxOrder.nextOrder,
+          sortOrder: maxOrder!.nextOrder,
         })
         .returning({
           key: categories.key,
@@ -104,7 +104,7 @@ export const categoryRoutes = {
         });
 
       return Response.json(
-        { key: category.key, label: category.label, icon: category.icon },
+        { key: category!.key, label: category!.label, icon: category!.icon },
         { status: 201 },
       );
     },

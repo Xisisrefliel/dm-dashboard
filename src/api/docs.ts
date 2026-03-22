@@ -57,12 +57,12 @@ export const docRoutes = {
 
       return Response.json(
         {
-          id: doc.id,
-          title: doc.title,
-          category: doc.category,
-          icon: doc.icon,
-          content: doc.content,
-          parentId: doc.parentId || null,
+          id: doc!.id,
+          title: doc!.title,
+          category: doc!.category,
+          icon: doc!.icon,
+          content: doc!.content,
+          parentId: doc!.parentId || null,
         },
         { status: 201 },
       );
@@ -125,13 +125,13 @@ export const docRoutes = {
         .where(eq(campaigns.id, existing.campaignId));
 
       return Response.json({
-        id: doc.id,
-        title: doc.title,
-        category: doc.category,
-        icon: doc.icon,
-        content: doc.content,
-        parentId: doc.parentId || null,
-        shared: doc.sharedWithParty || false,
+        id: doc!.id,
+        title: doc!.title,
+        category: doc!.category,
+        icon: doc!.icon,
+        content: doc!.content,
+        parentId: doc!.parentId || null,
+        shared: doc!.sharedWithParty || false,
       });
     },
 

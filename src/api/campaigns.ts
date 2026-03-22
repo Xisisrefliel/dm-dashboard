@@ -7,7 +7,7 @@ import {
 } from "../db/schema";
 import { eq, and, ne, sql, desc, asc } from "drizzle-orm";
 import { getSession } from "./auth";
-import { DEFAULT_CATEGORIES } from "../data/sampleCampaign.js";
+import { DEFAULT_CATEGORIES } from "../data/sampleCampaign.ts";
 
 function slugify(name: string): string {
   return (
@@ -130,7 +130,7 @@ export const campaignRoutes = {
           .returning();
 
         for (let i = 0; i < DEFAULT_CATEGORIES.length; i++) {
-          const cat = DEFAULT_CATEGORIES[i];
+          const cat = DEFAULT_CATEGORIES[i]!;
           const [row] = await tx
             .insert(categories)
             .values({
