@@ -1,4 +1,11 @@
-import { sql } from "../db";
+import { db } from "../db";
+import {
+  campaigns,
+  inviteTokens,
+  campaignMembers,
+  users,
+} from "../db/schema";
+import { eq, and, or, isNull, gt, lt, sql } from "drizzle-orm";
 import { getSession } from "./auth";
 
 export const partyRoutes = {
@@ -6,15 +13,20 @@ export const partyRoutes = {
   "/api/campaigns/:campaignId/invites": {
     async POST(req: Request) {
       const user = await getSession(req);
-      if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+      if (!user)
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
 
       const { campaignId } = (req as any).params;
 
-      const [campaign] = await sql`
-        SELECT id FROM campaigns WHERE id = ${campaignId} AND user_id = ${user.id}
-      `;
+      const [campaign] = await db
+        .select({ id: campaigns.id })
+        .from(campaigns)
+        .where(and(eq(campaigns.id, campaignId), eq(campaigns.userId, user.id)));
       if (!campaign) {
-        return Response.json({ error: "Campaign not found" }, { status: 404 });
+        return Response.json(
+          { error: "Campaign not found" },
+          { status: 404 },
+        );
       }
 
       const token = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
@@ -23,39 +35,72 @@ export const partyRoutes = {
         ? new Date(Date.now() + expiresInHours * 60 * 60 * 1000)
         : null;
 
-      const [invite] = await sql`
-        INSERT INTO invite_tokens (campaign_id, token, created_by, expires_at, max_uses)
-        VALUES (${campaignId}, ${token}, ${user.id}, ${expiresAt}, ${maxUses ?? null})
-        RETURNING id, token, expires_at, max_uses, use_count, created_at
-      `;
+      const [invite] = await db
+        .insert(inviteTokens)
+        .values({
+          campaignId,
+          token,
+          createdBy: user.id,
+          expiresAt,
+          maxUses: maxUses ?? null,
+        })
+        .returning({
+          id: inviteTokens.id,
+          token: inviteTokens.token,
+          expiresAt: inviteTokens.expiresAt,
+          maxUses: inviteTokens.maxUses,
+          useCount: inviteTokens.useCount,
+          createdAt: inviteTokens.createdAt,
+        });
 
       return Response.json(
-        { id: invite.id, token: invite.token, expiresAt: invite.expires_at },
+        { id: invite.id, token: invite.token, expiresAt: invite.expiresAt },
         { status: 201 },
       );
     },
 
     async GET(req: Request) {
       const user = await getSession(req);
-      if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+      if (!user)
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
 
       const { campaignId } = (req as any).params;
 
-      const [campaign] = await sql`
-        SELECT id FROM campaigns WHERE id = ${campaignId} AND user_id = ${user.id}
-      `;
+      const [campaign] = await db
+        .select({ id: campaigns.id })
+        .from(campaigns)
+        .where(and(eq(campaigns.id, campaignId), eq(campaigns.userId, user.id)));
       if (!campaign) {
-        return Response.json({ error: "Campaign not found" }, { status: 404 });
+        return Response.json(
+          { error: "Campaign not found" },
+          { status: 404 },
+        );
       }
 
-      const invites = await sql`
-        SELECT id, token, expires_at, max_uses, use_count, created_at
-        FROM invite_tokens
-        WHERE campaign_id = ${campaignId}
-          AND (expires_at IS NULL OR expires_at > NOW())
-          AND (max_uses IS NULL OR use_count < max_uses)
-        ORDER BY created_at DESC
-      `;
+      const invites = await db
+        .select({
+          id: inviteTokens.id,
+          token: inviteTokens.token,
+          expiresAt: inviteTokens.expiresAt,
+          maxUses: inviteTokens.maxUses,
+          useCount: inviteTokens.useCount,
+          createdAt: inviteTokens.createdAt,
+        })
+        .from(inviteTokens)
+        .where(
+          and(
+            eq(inviteTokens.campaignId, campaignId),
+            or(
+              isNull(inviteTokens.expiresAt),
+              gt(inviteTokens.expiresAt, new Date()),
+            ),
+            or(
+              isNull(inviteTokens.maxUses),
+              lt(inviteTokens.useCount, sql`${inviteTokens.maxUses}`),
+            ),
+          ),
+        )
+        .orderBy(sql`${inviteTokens.createdAt} DESC`);
 
       return Response.json(invites);
     },
@@ -65,48 +110,84 @@ export const partyRoutes = {
   "/api/invites/:token": {
     async GET(req: Request) {
       const user = await getSession(req);
-      if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+      if (!user)
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
 
       const { token } = (req as any).params;
 
-      const [invite] = await sql`
-        SELECT i.*, c.name AS campaign_name, c.color AS campaign_color, c.description AS campaign_description, c.user_id AS owner_id
-        FROM invite_tokens i
-        JOIN campaigns c ON c.id = i.campaign_id
-        WHERE i.token = ${token}
-          AND (i.expires_at IS NULL OR i.expires_at > NOW())
-          AND (i.max_uses IS NULL OR i.use_count < i.max_uses)
-      `;
+      const [invite] = await db
+        .select({
+          id: inviteTokens.id,
+          campaignId: inviteTokens.campaignId,
+          token: inviteTokens.token,
+          expiresAt: inviteTokens.expiresAt,
+          maxUses: inviteTokens.maxUses,
+          useCount: inviteTokens.useCount,
+          campaignName: campaigns.name,
+          campaignColor: campaigns.color,
+          campaignDescription: campaigns.description,
+          ownerId: campaigns.userId,
+        })
+        .from(inviteTokens)
+        .innerJoin(campaigns, eq(campaigns.id, inviteTokens.campaignId))
+        .where(
+          and(
+            eq(inviteTokens.token, token),
+            or(
+              isNull(inviteTokens.expiresAt),
+              gt(inviteTokens.expiresAt, new Date()),
+            ),
+            or(
+              isNull(inviteTokens.maxUses),
+              lt(inviteTokens.useCount, sql`${inviteTokens.maxUses}`),
+            ),
+          ),
+        );
       if (!invite) {
-        return Response.json({ error: "Invalid or expired invite" }, { status: 404 });
+        return Response.json(
+          { error: "Invalid or expired invite" },
+          { status: 404 },
+        );
       }
 
-      const [existing] = await sql`
-        SELECT id FROM campaign_members
-        WHERE campaign_id = ${invite.campaign_id} AND user_id = ${user.id}
-      `;
+      const [existing] = await db
+        .select({ id: campaignMembers.id })
+        .from(campaignMembers)
+        .where(
+          and(
+            eq(campaignMembers.campaignId, invite.campaignId),
+            eq(campaignMembers.userId, user.id),
+          ),
+        );
 
       return Response.json({
         campaign: {
-          id: invite.campaign_id,
-          name: invite.campaign_name,
-          color: invite.campaign_color,
-          description: invite.campaign_description,
+          id: invite.campaignId,
+          name: invite.campaignName,
+          color: invite.campaignColor,
+          description: invite.campaignDescription,
         },
-        isOwner: invite.owner_id === user.id,
+        isOwner: invite.ownerId === user.id,
         alreadyJoined: !!existing,
       });
     },
 
     async DELETE(req: Request) {
       const user = await getSession(req);
-      if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+      if (!user)
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
 
       const { token } = (req as any).params;
 
-      const [invite] = await sql`
-        DELETE FROM invite_tokens WHERE token = ${token} AND created_by = ${user.id} RETURNING id
-      `;
+      const [invite] = await db
+        .delete(inviteTokens)
+        .where(
+          and(
+            eq(inviteTokens.token, token),
+            eq(inviteTokens.createdBy, user.id),
+          ),
+        )
+        .returning({ id: inviteTokens.id });
       if (!invite) {
         return Response.json({ error: "Not found" }, { status: 404 });
       }
@@ -119,44 +200,79 @@ export const partyRoutes = {
   "/api/invites/:token/join": {
     async POST(req: Request) {
       const user = await getSession(req);
-      if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+      if (!user)
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
 
       const { token } = (req as any).params;
 
-      const [invite] = await sql`
-        SELECT i.*, c.user_id AS owner_id
-        FROM invite_tokens i
-        JOIN campaigns c ON c.id = i.campaign_id
-        WHERE i.token = ${token}
-          AND (i.expires_at IS NULL OR i.expires_at > NOW())
-          AND (i.max_uses IS NULL OR i.use_count < i.max_uses)
-      `;
+      const [invite] = await db
+        .select({
+          id: inviteTokens.id,
+          campaignId: inviteTokens.campaignId,
+          expiresAt: inviteTokens.expiresAt,
+          maxUses: inviteTokens.maxUses,
+          useCount: inviteTokens.useCount,
+          ownerId: campaigns.userId,
+        })
+        .from(inviteTokens)
+        .innerJoin(campaigns, eq(campaigns.id, inviteTokens.campaignId))
+        .where(
+          and(
+            eq(inviteTokens.token, token),
+            or(
+              isNull(inviteTokens.expiresAt),
+              gt(inviteTokens.expiresAt, new Date()),
+            ),
+            or(
+              isNull(inviteTokens.maxUses),
+              lt(inviteTokens.useCount, sql`${inviteTokens.maxUses}`),
+            ),
+          ),
+        );
       if (!invite) {
-        return Response.json({ error: "Invalid or expired invite" }, { status: 404 });
+        return Response.json(
+          { error: "Invalid or expired invite" },
+          { status: 404 },
+        );
       }
 
-      if (invite.owner_id === user.id) {
-        return Response.json({ error: "Cannot join your own campaign" }, { status: 400 });
+      if (invite.ownerId === user.id) {
+        return Response.json(
+          { error: "Cannot join your own campaign" },
+          { status: 400 },
+        );
       }
 
       const { character } = await req.json();
       if (!character?.name) {
-        return Response.json({ error: "Character data is required" }, { status: 400 });
+        return Response.json(
+          { error: "Character data is required" },
+          { status: 400 },
+        );
       }
 
       // Upsert: if player already joined, update their character
-      const [member] = await sql`
-        INSERT INTO campaign_members (campaign_id, user_id, character_data)
-        VALUES (${invite.campaign_id}, ${user.id}, ${sql.json(character)})
-        ON CONFLICT (campaign_id, user_id)
-        DO UPDATE SET character_data = ${sql.json(character)}, joined_at = NOW()
-        RETURNING id
-      `;
+      const [member] = await db
+        .insert(campaignMembers)
+        .values({
+          campaignId: invite.campaignId,
+          userId: user.id,
+          characterData: character,
+        })
+        .onConflictDoUpdate({
+          target: [campaignMembers.campaignId, campaignMembers.userId],
+          set: {
+            characterData: character,
+            joinedAt: new Date(),
+          },
+        })
+        .returning({ id: campaignMembers.id });
 
       // Increment use count
-      await sql`
-        UPDATE invite_tokens SET use_count = use_count + 1 WHERE id = ${invite.id}
-      `;
+      await db
+        .update(inviteTokens)
+        .set({ useCount: sql`${inviteTokens.useCount} + 1` })
+        .where(eq(inviteTokens.id, invite.id));
 
       return Response.json({ ok: true, memberId: member.id });
     },
@@ -166,32 +282,42 @@ export const partyRoutes = {
   "/api/campaigns/:campaignId/party": {
     async GET(req: Request) {
       const user = await getSession(req);
-      if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+      if (!user)
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
 
       const { campaignId } = (req as any).params;
 
-      const [campaign] = await sql`
-        SELECT id FROM campaigns WHERE id = ${campaignId} AND user_id = ${user.id}
-      `;
+      const [campaign] = await db
+        .select({ id: campaigns.id })
+        .from(campaigns)
+        .where(and(eq(campaigns.id, campaignId), eq(campaigns.userId, user.id)));
       if (!campaign) {
-        return Response.json({ error: "Campaign not found" }, { status: 404 });
+        return Response.json(
+          { error: "Campaign not found" },
+          { status: 404 },
+        );
       }
 
-      const members = await sql`
-        SELECT cm.id, cm.user_id, u.display_name, cm.character_data, cm.joined_at
-        FROM campaign_members cm
-        JOIN users u ON u.id = cm.user_id
-        WHERE cm.campaign_id = ${campaignId}
-        ORDER BY cm.joined_at
-      `;
+      const members = await db
+        .select({
+          id: campaignMembers.id,
+          userId: campaignMembers.userId,
+          displayName: users.displayName,
+          characterData: campaignMembers.characterData,
+          joinedAt: campaignMembers.joinedAt,
+        })
+        .from(campaignMembers)
+        .innerJoin(users, eq(users.id, campaignMembers.userId))
+        .where(eq(campaignMembers.campaignId, campaignId))
+        .orderBy(campaignMembers.joinedAt);
 
       return Response.json(
-        members.map((m: any) => ({
+        members.map((m) => ({
           id: m.id,
-          userId: m.user_id,
-          playerName: m.display_name,
-          character: m.character_data,
-          joinedAt: m.joined_at,
+          userId: m.userId,
+          playerName: m.displayName,
+          character: m.characterData,
+          joinedAt: m.joinedAt,
         })),
       );
     },
@@ -201,20 +327,31 @@ export const partyRoutes = {
   "/api/campaigns/:campaignId/party/:memberId": {
     async DELETE(req: Request) {
       const user = await getSession(req);
-      if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+      if (!user)
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
 
       const { campaignId, memberId } = (req as any).params;
 
-      const [campaign] = await sql`
-        SELECT id FROM campaigns WHERE id = ${campaignId} AND user_id = ${user.id}
-      `;
+      const [campaign] = await db
+        .select({ id: campaigns.id })
+        .from(campaigns)
+        .where(and(eq(campaigns.id, campaignId), eq(campaigns.userId, user.id)));
       if (!campaign) {
-        return Response.json({ error: "Campaign not found" }, { status: 404 });
+        return Response.json(
+          { error: "Campaign not found" },
+          { status: 404 },
+        );
       }
 
-      const [member] = await sql`
-        DELETE FROM campaign_members WHERE id = ${memberId} AND campaign_id = ${campaignId} RETURNING id
-      `;
+      const [member] = await db
+        .delete(campaignMembers)
+        .where(
+          and(
+            eq(campaignMembers.id, memberId),
+            eq(campaignMembers.campaignId, campaignId),
+          ),
+        )
+        .returning({ id: campaignMembers.id });
       if (!member) {
         return Response.json({ error: "Not found" }, { status: 404 });
       }
@@ -227,20 +364,30 @@ export const partyRoutes = {
   "/api/party/sync": {
     async POST(req: Request) {
       const user = await getSession(req);
-      if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+      if (!user)
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
 
       const { character } = await req.json();
       if (!character?.localId) {
-        return Response.json({ error: "character with localId is required" }, { status: 400 });
+        return Response.json(
+          { error: "character with localId is required" },
+          { status: 400 },
+        );
       }
 
-      const updated = await sql`
-        UPDATE campaign_members
-        SET character_data = ${sql.json(character)}, joined_at = NOW()
-        WHERE user_id = ${user.id}
-          AND character_data->>'localId' = ${character.localId}
-        RETURNING id
-      `;
+      const updated = await db
+        .update(campaignMembers)
+        .set({
+          characterData: character,
+          joinedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(campaignMembers.userId, user.id),
+            sql`${campaignMembers.characterData}->>'localId' = ${character.localId}`,
+          ),
+        )
+        .returning({ id: campaignMembers.id });
 
       return Response.json({ ok: true, updated: updated.length });
     },
