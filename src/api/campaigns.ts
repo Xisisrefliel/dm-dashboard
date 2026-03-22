@@ -1,6 +1,6 @@
 import { sql } from "../db";
 import { getSession } from "./auth";
-import { DEFAULT_CATEGORIES } from "../data/sampleCampaign.js";
+import { DEFAULT_CATEGORIES } from "../data/sampleCampaign.ts";
 
 function slugify(name: string): string {
   return name
@@ -15,9 +15,9 @@ async function uniqueSlug(userId: string, name: string, excludeId?: string): Pro
   let slug = base;
   let i = 2;
   while (true) {
-    const [existing] = excludeId
+    const [existing] = (excludeId
       ? await sql`SELECT id FROM campaigns WHERE user_id = ${userId} AND slug = ${slug} AND id != ${excludeId}`
-      : await sql`SELECT id FROM campaigns WHERE user_id = ${userId} AND slug = ${slug}`;
+      : await sql`SELECT id FROM campaigns WHERE user_id = ${userId} AND slug = ${slug}`) as any[];
     if (!existing) return slug;
     slug = `${base}-${i++}`;
   }
@@ -89,7 +89,7 @@ export const campaignRoutes = {
         `;
 
         for (let i = 0; i < DEFAULT_CATEGORIES.length; i++) {
-          const cat = DEFAULT_CATEGORIES[i];
+          const cat = DEFAULT_CATEGORIES[i]!;
           const [row] = await tx`
             INSERT INTO categories (campaign_id, key, label, icon, sort_order)
             VALUES (${campaign.id}, ${cat.key}, ${cat.label}, ${cat.icon}, ${i})
@@ -127,9 +127,9 @@ export const campaignRoutes = {
 
       // Accept both UUID and slug — check ownership first, then membership
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-/.test(id);
-      const [campaign] = isUUID
+      const [campaign] = (isUUID
         ? await sql`SELECT * FROM campaigns WHERE id = ${id}`
-        : await sql`SELECT * FROM campaigns WHERE slug = ${id}`;
+        : await sql`SELECT * FROM campaigns WHERE slug = ${id}`) as any[];
       if (!campaign) {
         return Response.json({ error: "Not found" }, { status: 404 });
       }
@@ -139,7 +139,7 @@ export const campaignRoutes = {
         // Check membership
         const [member] = await sql`
           SELECT id FROM campaign_members WHERE campaign_id = ${campaign.id} AND user_id = ${user.id}
-        `;
+        ` as any[];
         if (!member) {
           return Response.json({ error: "Not found" }, { status: 404 });
         }
@@ -209,7 +209,7 @@ export const campaignRoutes = {
             updated_at = NOW()
         WHERE id = ${id} AND user_id = ${user.id}
         RETURNING *
-      `;
+      ` as any[];
       if (!campaign) {
         return Response.json({ error: "Not found" }, { status: 404 });
       }
@@ -231,7 +231,7 @@ export const campaignRoutes = {
 
       const [campaign] = await sql`
         DELETE FROM campaigns WHERE id = ${id} AND user_id = ${user.id} RETURNING id
-      `;
+      ` as any[];
       if (!campaign) {
         return Response.json({ error: "Not found" }, { status: 404 });
       }

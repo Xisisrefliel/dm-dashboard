@@ -26,7 +26,7 @@ export async function getSession(req: Request) {
     FROM users u
     JOIN sessions s ON s.user_id = u.id
     WHERE s.token = ${token} AND s.expires_at > NOW()
-  `;
+  ` as any[];
 
   return user || null;
 }
@@ -48,7 +48,7 @@ export const authRoutes = {
         );
       }
 
-      const [existing] = await sql`SELECT id FROM users WHERE email = ${email}`;
+      const [existing] = await sql`SELECT id FROM users WHERE email = ${email}` as any[];
       if (existing) {
         return Response.json(
           { error: "Email already registered" },
@@ -61,7 +61,7 @@ export const authRoutes = {
         INSERT INTO users (email, password_hash, display_name)
         VALUES (${email}, ${passwordHash}, ${displayName})
         RETURNING id, email, display_name
-      `;
+      ` as any[];
 
       const token = crypto.randomUUID();
       const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
@@ -92,7 +92,7 @@ export const authRoutes = {
       }
 
       const [user] =
-        await sql`SELECT * FROM users WHERE email = ${email}`;
+        await sql`SELECT * FROM users WHERE email = ${email}` as any[];
       if (!user || !(await Bun.password.verify(password, user.password_hash))) {
         return Response.json(
           { error: "Invalid email or password" },

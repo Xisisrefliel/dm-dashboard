@@ -94,7 +94,7 @@ console.log(`✓ Monsters: ${monsters.length} entries`);
 const rawRules = await Bun.file(`${RAW}/5e-SRD-Rules.json`).json();
 const rawSections = await Bun.file(`${RAW}/5e-SRD-Rule-Sections.json`).json();
 
-const sectionMap = new Map(rawSections.map((s: any) => [s.index, s]));
+const sectionMap = new Map<string, any>(rawSections.map((s: any) => [s.index, s]));
 
 const rules = rawRules.map((r: any) => ({
   id: r.index,

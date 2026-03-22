@@ -11,7 +11,7 @@ export const docRoutes = {
 
       const [campaign] = await sql`
         SELECT id FROM campaigns WHERE id = ${campaignId} AND user_id = ${user.id}
-      `;
+      ` as any[];
       if (!campaign) {
         return Response.json({ error: "Campaign not found" }, { status: 404 });
       }
@@ -25,7 +25,7 @@ export const docRoutes = {
         INSERT INTO docs (campaign_id, category_key, title, icon, content, parent_id)
         VALUES (${campaignId}, ${category || "locations"}, ${title.trim()}, ${icon || "description"}, ${content || ""}, ${parentId || null})
         RETURNING id, category_key AS category, title, icon, content, parent_id
-      `;
+      ` as any[];
 
       await sql`UPDATE campaigns SET updated_at = NOW() WHERE id = ${campaignId}`;
 
@@ -55,7 +55,7 @@ export const docRoutes = {
         SELECT d.id, d.campaign_id FROM docs d
         JOIN campaigns c ON c.id = d.campaign_id
         WHERE d.id = ${id} AND c.user_id = ${user.id}
-      `;
+      ` as any[];
       if (!existing) {
         return Response.json({ error: "Not found" }, { status: 404 });
       }
@@ -64,7 +64,7 @@ export const docRoutes = {
       const parentIdVal = "parentId" in updates ? (updates.parentId || null) : undefined;
       const sharedVal = "shared" in updates ? !!updates.shared : undefined;
 
-      const [doc] = parentIdVal !== undefined
+      const [doc] = (parentIdVal !== undefined
         ? await sql`
           UPDATE docs SET
             title = COALESCE(${updates.title ?? null}, title),
@@ -87,7 +87,7 @@ export const docRoutes = {
             updated_at = NOW()
           WHERE id = ${id}
           RETURNING id, category_key AS category, title, icon, content, parent_id, shared_with_party
-        `;
+        `) as any[];
 
       await sql`UPDATE campaigns SET updated_at = NOW() WHERE id = ${existing.campaign_id}`;
 
@@ -112,7 +112,7 @@ export const docRoutes = {
         SELECT d.id, d.campaign_id FROM docs d
         JOIN campaigns c ON c.id = d.campaign_id
         WHERE d.id = ${id} AND c.user_id = ${user.id}
-      `;
+      ` as any[];
       if (!doc) {
         return Response.json({ error: "Not found" }, { status: 404 });
       }

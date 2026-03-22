@@ -12,7 +12,7 @@ export const partyRoutes = {
 
       const [campaign] = await sql`
         SELECT id FROM campaigns WHERE id = ${campaignId} AND user_id = ${user.id}
-      `;
+      ` as any[];
       if (!campaign) {
         return Response.json({ error: "Campaign not found" }, { status: 404 });
       }
@@ -27,7 +27,7 @@ export const partyRoutes = {
         INSERT INTO invite_tokens (campaign_id, token, created_by, expires_at, max_uses)
         VALUES (${campaignId}, ${token}, ${user.id}, ${expiresAt}, ${maxUses ?? null})
         RETURNING id, token, expires_at, max_uses, use_count, created_at
-      `;
+      ` as any[];
 
       return Response.json(
         { id: invite.id, token: invite.token, expiresAt: invite.expires_at },
@@ -43,7 +43,7 @@ export const partyRoutes = {
 
       const [campaign] = await sql`
         SELECT id FROM campaigns WHERE id = ${campaignId} AND user_id = ${user.id}
-      `;
+      ` as any[];
       if (!campaign) {
         return Response.json({ error: "Campaign not found" }, { status: 404 });
       }
@@ -76,7 +76,7 @@ export const partyRoutes = {
         WHERE i.token = ${token}
           AND (i.expires_at IS NULL OR i.expires_at > NOW())
           AND (i.max_uses IS NULL OR i.use_count < i.max_uses)
-      `;
+      ` as any[];
       if (!invite) {
         return Response.json({ error: "Invalid or expired invite" }, { status: 404 });
       }
@@ -84,7 +84,7 @@ export const partyRoutes = {
       const [existing] = await sql`
         SELECT id FROM campaign_members
         WHERE campaign_id = ${invite.campaign_id} AND user_id = ${user.id}
-      `;
+      ` as any[];
 
       return Response.json({
         campaign: {
@@ -106,7 +106,7 @@ export const partyRoutes = {
 
       const [invite] = await sql`
         DELETE FROM invite_tokens WHERE token = ${token} AND created_by = ${user.id} RETURNING id
-      `;
+      ` as any[];
       if (!invite) {
         return Response.json({ error: "Not found" }, { status: 404 });
       }
@@ -130,7 +130,7 @@ export const partyRoutes = {
         WHERE i.token = ${token}
           AND (i.expires_at IS NULL OR i.expires_at > NOW())
           AND (i.max_uses IS NULL OR i.use_count < i.max_uses)
-      `;
+      ` as any[];
       if (!invite) {
         return Response.json({ error: "Invalid or expired invite" }, { status: 404 });
       }
@@ -151,7 +151,7 @@ export const partyRoutes = {
         ON CONFLICT (campaign_id, user_id)
         DO UPDATE SET character_data = ${sql.json(character)}, joined_at = NOW()
         RETURNING id
-      `;
+      ` as any[];
 
       // Increment use count
       await sql`
@@ -172,7 +172,7 @@ export const partyRoutes = {
 
       const [campaign] = await sql`
         SELECT id FROM campaigns WHERE id = ${campaignId} AND user_id = ${user.id}
-      `;
+      ` as any[];
       if (!campaign) {
         return Response.json({ error: "Campaign not found" }, { status: 404 });
       }
@@ -207,14 +207,14 @@ export const partyRoutes = {
 
       const [campaign] = await sql`
         SELECT id FROM campaigns WHERE id = ${campaignId} AND user_id = ${user.id}
-      `;
+      ` as any[];
       if (!campaign) {
         return Response.json({ error: "Campaign not found" }, { status: 404 });
       }
 
       const [member] = await sql`
         DELETE FROM campaign_members WHERE id = ${memberId} AND campaign_id = ${campaignId} RETURNING id
-      `;
+      ` as any[];
       if (!member) {
         return Response.json({ error: "Not found" }, { status: 404 });
       }

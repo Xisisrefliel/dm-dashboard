@@ -11,7 +11,7 @@ export const categoryRoutes = {
 
       const [campaign] = await sql`
         SELECT id FROM campaigns WHERE id = ${campaignId} AND user_id = ${user.id}
-      `;
+      ` as any[];
       if (!campaign) {
         return Response.json({ error: "Campaign not found" }, { status: 404 });
       }
@@ -27,7 +27,7 @@ export const categoryRoutes = {
       await sql.begin(async (tx: any) => {
         await tx`DELETE FROM categories WHERE campaign_id = ${campaignId}`;
         for (let i = 0; i < categories.length; i++) {
-          const cat = categories[i];
+          const cat = categories[i]!;
           await tx`
             INSERT INTO categories (campaign_id, key, label, icon, sort_order)
             VALUES (${campaignId}, ${cat.key}, ${cat.label}, ${cat.icon || "folder"}, ${i})
@@ -48,7 +48,7 @@ export const categoryRoutes = {
 
       const [campaign] = await sql`
         SELECT id FROM campaigns WHERE id = ${campaignId} AND user_id = ${user.id}
-      `;
+      ` as any[];
       if (!campaign) {
         return Response.json({ error: "Campaign not found" }, { status: 404 });
       }
@@ -64,13 +64,13 @@ export const categoryRoutes = {
       const [maxOrder] = await sql`
         SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_order
         FROM categories WHERE campaign_id = ${campaignId}
-      `;
+      ` as any[];
 
       const [category] = await sql`
         INSERT INTO categories (campaign_id, key, label, icon, sort_order)
-        VALUES (${campaignId}, ${key}, ${label}, ${icon || "folder"}, ${maxOrder.next_order})
+        VALUES (${campaignId}, ${key}, ${label}, ${icon || "folder"}, ${maxOrder!.next_order})
         RETURNING key, label, icon
-      `;
+      ` as any[];
 
       return Response.json(
         { key: category.key, label: category.label, icon: category.icon },
