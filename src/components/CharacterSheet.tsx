@@ -105,6 +105,8 @@ export default function CharacterSheet({ char, update, onBack, editId, assignedS
   const [invView, setInvView] = useState<string>("list");
   const [invSearch, setInvSearch] = useState<string>("");
   const [customItem, setCustomItem] = useState<CustomItemState>({ name: "", icon: "inventory_2", weight: "", desc: "" });
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
 
   // Toggle body scroll for the finished character sheet
   useEffect(() => {
@@ -124,11 +126,41 @@ export default function CharacterSheet({ char, update, onBack, editId, assignedS
     setEditing(false);
   };
 
+  const handleGenerateImage = async () => {
+    if (!char.race || !char.class || generating) return;
+    setGenerating(true);
+    setGenError(null);
+    try {
+      const res = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ race: char.race, class: char.class, background: char.background }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Generation failed");
+      update("generatedImage", data.imageUrl);
+      // Persist immediately
+      const chars = loadCharacters();
+      const id = editId || char.id;
+      const idx = chars.findIndex((c) => c.id === id);
+      if (idx >= 0) {
+        chars[idx] = { ...chars[idx], generatedImage: data.imageUrl };
+        saveCharacters(chars);
+      }
+    } catch (e: any) {
+      setGenError(e.message);
+      setTimeout(() => setGenError(null), 4000);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const bgData = BACKGROUNDS.find((b) => b.id === char.background);
   const alData = ALIGNMENTS.find((a) => a.id === char.alignment);
 
   const rImg = char.race ? (RACE_IMAGES as Record<string, string>)[char.race] : null;
   const cImg = char.class ? (CLASS_IMAGES as Record<string, string>)[char.class] : null;
+  const displayImage = char.generatedImage || cImg || rImg;
   const hp = classData ? classData.hitDie + (char.level - 1) * (Math.floor(classData.hitDie / 2) + 1) : 0;
   const profBonus = Math.ceil(char.level / 4) + 1;
 
@@ -155,12 +187,43 @@ export default function CharacterSheet({ char, update, onBack, editId, assignedS
           overflow: "hidden", border: "1px solid var(--dm-outline-variant)", marginBottom: 24,
           ...(isMobile ? { flexDirection: "column" } : {}),
         }}>
-          {(cImg || rImg) && (
-            <div style={isMobile
-              ? { width: "100%", height: 200, flexShrink: 0 }
-              : { width: 240, minWidth: 240, flexShrink: 0 }
-            }>
-              <img src={(cImg || rImg)!} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />
+          {displayImage && (
+            <div style={{
+              position: "relative",
+              ...(isMobile
+                ? { width: "100%", height: 200, flexShrink: 0 }
+                : { width: 240, minWidth: 240, flexShrink: 0 }),
+            }}>
+              <img src={displayImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />
+              {char.race && char.class && (
+                <Ripple
+                  onClick={generating ? undefined : handleGenerateImage}
+                  style={{
+                    position: "absolute", top: 8, right: 8,
+                    width: 36, height: 36, borderRadius: 18,
+                    background: genError ? "rgba(180,40,40,0.75)" : "rgba(0,0,0,0.55)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    zIndex: 2, cursor: generating ? "wait" : "pointer",
+                    transition: "background 0.2s",
+                  }}
+                >
+                  <Icon
+                    name={genError ? "error" : generating ? "hourglass_top" : "auto_awesome"}
+                    size={20}
+                    style={{ color: "#fff" }}
+                  />
+                </Ripple>
+              )}
+              {generating && (
+                <div style={{
+                  position: "absolute", inset: 0,
+                  background: "rgba(0,0,0,0.45)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  zIndex: 1,
+                }}>
+                  <span style={{ color: "#fff", fontSize: 13, fontWeight: 500 }}>Generating...</span>
+                </div>
+              )}
             </div>
           )}
           <div style={isMobile ? { flex: 1, padding: 16 } : { flex: 1, padding: "24px 28px" }}>
