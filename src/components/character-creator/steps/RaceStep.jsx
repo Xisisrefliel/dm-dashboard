@@ -26,7 +26,7 @@ export default function RaceStep({ char, update, next, prev, haptic, previewRace
 
   const closePreview = (cb) => {
     setClosing(true);
-    setTimeout(() => { setClosing(false); setPreviewRace(null); cb?.(); }, 250);
+    setTimeout(() => { setClosing(false); setPreviewRace(null); update("race", ""); cb?.(); }, 250);
   };
 
   if (pRace) {

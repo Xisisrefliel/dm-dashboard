@@ -23,7 +23,7 @@ export default function BackgroundStep({ char, update, next, prev, haptic, previ
 
   const closePreview = (cb) => {
     setClosing(true);
-    setTimeout(() => { setClosing(false); setPreviewBg(null); cb?.(); }, 250);
+    setTimeout(() => { setClosing(false); setPreviewBg(null); update("background", ""); cb?.(); }, 250);
   };
 
   if (pBg) {

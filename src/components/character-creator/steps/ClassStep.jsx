@@ -31,7 +31,7 @@ export default function ClassStep({ char, update, next, prev, haptic, previewCla
 
   const closePreview = (cb) => {
     setClosing(true);
-    setTimeout(() => { setClosing(false); setPreviewClass(null); cb?.(); }, 250);
+    setTimeout(() => { setClosing(false); setPreviewClass(null); update("class", ""); update("skills", []); update("equipChoices", {}); cb?.(); }, 250);
   };
 
   const toggleSkill = (skill) => {
