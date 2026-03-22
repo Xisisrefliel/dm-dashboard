@@ -21,6 +21,13 @@ import warlockImg from "../assets-optimized/classes/Warlock.webp";
 import wizardImg from "../assets-optimized/classes/Wizard.webp";
 import humanLandscape from "../assets-optimized/race-landscapes/human.webp";
 import elfLandscape from "../assets-optimized/race-landscapes/elf.webp";
+import dwarfLandscape from "../assets-optimized/race-landscapes/dwarf.webp";
+import dragonbornLandscape from "../assets-optimized/race-landscapes/dragonborn.webp";
+import halflingLandscape from "../assets-optimized/race-landscapes/halfling.webp";
+import tieflingLandscape from "../assets-optimized/race-landscapes/tiefling.webp";
+import gnomeLandscape from "../assets-optimized/race-landscapes/gnome.webp";
+import halfElfLandscape from "../assets-optimized/race-landscapes/half-elf.webp";
+import halfOrcLandscape from "../assets-optimized/race-landscapes/half-orc.webp";
 import acolyteImg from "../assets-optimized/backgrounds/acolyte.webp";
 import criminalImg from "../assets-optimized/backgrounds/criminal.webp";
 import folkHeroImg from "../assets-optimized/backgrounds/folk hero.webp";
@@ -80,11 +87,11 @@ export const RACE_LANDSCAPES = {
   human: humanLandscape,
   elf: elfLandscape,
   // Add more as images are generated:
-  // dwarf: dwarfLandscape,
-  // halfling: halflingLandscape,
-  // dragonborn: dragonbornLandscape,
-  // tiefling: tieflingLandscape,
-  // gnome: gnomeLandscape,
-  // "half-elf": halfElfLandscape,
-  // "half-orc": halfOrcLandscape,
+  dwarf: dwarfLandscape,
+  halfling: halflingLandscape,
+  dragonborn: dragonbornLandscape,
+  tiefling: tieflingLandscape,
+  gnome: gnomeLandscape,
+  "half-elf": halfElfLandscape,
+  "half-orc": halfOrcLandscape,
 };
