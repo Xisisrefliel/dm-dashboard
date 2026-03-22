@@ -1,4 +1,4 @@
-import { sql } from "./index";
+import { client as sql } from "./index";
 
 export async function migrate() {
   await sql`

@@ -1,33 +1,59 @@
-import { sql } from "../db";
+import { db } from "../db";
+import { campaigns, docs } from "../db/schema";
+import { eq, and, sql } from "drizzle-orm";
 import { getSession } from "./auth";
 
 export const docRoutes = {
   "/api/campaigns/:campaignId/docs": {
     async POST(req: Request) {
       const user = await getSession(req);
-      if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+      if (!user)
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
 
       const { campaignId } = (req as any).params;
 
-      const [campaign] = await sql`
-        SELECT id FROM campaigns WHERE id = ${campaignId} AND user_id = ${user.id}
-      `;
+      const [campaign] = await db
+        .select({ id: campaigns.id })
+        .from(campaigns)
+        .where(and(eq(campaigns.id, campaignId), eq(campaigns.userId, user.id)));
       if (!campaign) {
-        return Response.json({ error: "Campaign not found" }, { status: 404 });
+        return Response.json(
+          { error: "Campaign not found" },
+          { status: 404 },
+        );
       }
 
       const { title, category, icon, content, parentId } = await req.json();
       if (!title?.trim()) {
-        return Response.json({ error: "Title is required" }, { status: 400 });
+        return Response.json(
+          { error: "Title is required" },
+          { status: 400 },
+        );
       }
 
-      const [doc] = await sql`
-        INSERT INTO docs (campaign_id, category_key, title, icon, content, parent_id)
-        VALUES (${campaignId}, ${category || "locations"}, ${title.trim()}, ${icon || "description"}, ${content || ""}, ${parentId || null})
-        RETURNING id, category_key AS category, title, icon, content, parent_id
-      `;
+      const [doc] = await db
+        .insert(docs)
+        .values({
+          campaignId,
+          categoryKey: category || "locations",
+          title: title.trim(),
+          icon: icon || "description",
+          content: content || "",
+          parentId: parentId || null,
+        })
+        .returning({
+          id: docs.id,
+          category: docs.categoryKey,
+          title: docs.title,
+          icon: docs.icon,
+          content: docs.content,
+          parentId: docs.parentId,
+        });
 
-      await sql`UPDATE campaigns SET updated_at = NOW() WHERE id = ${campaignId}`;
+      await db
+        .update(campaigns)
+        .set({ updatedAt: new Date() })
+        .where(eq(campaigns.id, campaignId));
 
       return Response.json(
         {
@@ -36,7 +62,7 @@ export const docRoutes = {
           category: doc.category,
           icon: doc.icon,
           content: doc.content,
-          parentId: doc.parent_id || null,
+          parentId: doc.parentId || null,
         },
         { status: 201 },
       );
@@ -46,50 +72,57 @@ export const docRoutes = {
   "/api/docs/:id": {
     async PUT(req: Request) {
       const user = await getSession(req);
-      if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+      if (!user)
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
 
       const { id } = (req as any).params;
       const updates = await req.json();
 
-      const [existing] = await sql`
-        SELECT d.id, d.campaign_id FROM docs d
-        JOIN campaigns c ON c.id = d.campaign_id
-        WHERE d.id = ${id} AND c.user_id = ${user.id}
-      `;
+      const [existing] = await db
+        .select({ id: docs.id, campaignId: docs.campaignId })
+        .from(docs)
+        .innerJoin(campaigns, eq(campaigns.id, docs.campaignId))
+        .where(and(eq(docs.id, id), eq(campaigns.userId, user.id)));
       if (!existing) {
         return Response.json({ error: "Not found" }, { status: 404 });
       }
 
       // Only update parent_id if explicitly provided in the payload
-      const parentIdVal = "parentId" in updates ? (updates.parentId || null) : undefined;
-      const sharedVal = "shared" in updates ? !!updates.shared : undefined;
+      const parentIdVal =
+        "parentId" in updates ? updates.parentId || null : undefined;
+      const sharedVal =
+        "shared" in updates ? !!updates.shared : undefined;
 
-      const [doc] = parentIdVal !== undefined
-        ? await sql`
-          UPDATE docs SET
-            title = COALESCE(${updates.title ?? null}, title),
-            icon = COALESCE(${updates.icon ?? null}, icon),
-            content = COALESCE(${updates.content ?? null}, content),
-            category_key = COALESCE(${updates.category ?? null}, category_key),
-            parent_id = ${parentIdVal},
-            shared_with_party = COALESCE(${sharedVal ?? null}, shared_with_party),
-            updated_at = NOW()
-          WHERE id = ${id}
-          RETURNING id, category_key AS category, title, icon, content, parent_id, shared_with_party
-        `
-        : await sql`
-          UPDATE docs SET
-            title = COALESCE(${updates.title ?? null}, title),
-            icon = COALESCE(${updates.icon ?? null}, icon),
-            content = COALESCE(${updates.content ?? null}, content),
-            category_key = COALESCE(${updates.category ?? null}, category_key),
-            shared_with_party = COALESCE(${sharedVal ?? null}, shared_with_party),
-            updated_at = NOW()
-          WHERE id = ${id}
-          RETURNING id, category_key AS category, title, icon, content, parent_id, shared_with_party
-        `;
+      const setClause: Record<string, any> = {
+        title: sql`COALESCE(${updates.title ?? null}, ${docs.title})`,
+        icon: sql`COALESCE(${updates.icon ?? null}, ${docs.icon})`,
+        content: sql`COALESCE(${updates.content ?? null}, ${docs.content})`,
+        categoryKey: sql`COALESCE(${updates.category ?? null}, ${docs.categoryKey})`,
+        sharedWithParty: sql`COALESCE(${sharedVal ?? null}, ${docs.sharedWithParty})`,
+        updatedAt: new Date(),
+      };
+      if (parentIdVal !== undefined) {
+        setClause.parentId = parentIdVal;
+      }
 
-      await sql`UPDATE campaigns SET updated_at = NOW() WHERE id = ${existing.campaign_id}`;
+      const [doc] = await db
+        .update(docs)
+        .set(setClause)
+        .where(eq(docs.id, id))
+        .returning({
+          id: docs.id,
+          category: docs.categoryKey,
+          title: docs.title,
+          icon: docs.icon,
+          content: docs.content,
+          parentId: docs.parentId,
+          sharedWithParty: docs.sharedWithParty,
+        });
+
+      await db
+        .update(campaigns)
+        .set({ updatedAt: new Date() })
+        .where(eq(campaigns.id, existing.campaignId));
 
       return Response.json({
         id: doc.id,
@@ -97,28 +130,32 @@ export const docRoutes = {
         category: doc.category,
         icon: doc.icon,
         content: doc.content,
-        parentId: doc.parent_id || null,
-        shared: doc.shared_with_party || false,
+        parentId: doc.parentId || null,
+        shared: doc.sharedWithParty || false,
       });
     },
 
     async DELETE(req: Request) {
       const user = await getSession(req);
-      if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+      if (!user)
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
 
       const { id } = (req as any).params;
 
-      const [doc] = await sql`
-        SELECT d.id, d.campaign_id FROM docs d
-        JOIN campaigns c ON c.id = d.campaign_id
-        WHERE d.id = ${id} AND c.user_id = ${user.id}
-      `;
+      const [doc] = await db
+        .select({ id: docs.id, campaignId: docs.campaignId })
+        .from(docs)
+        .innerJoin(campaigns, eq(campaigns.id, docs.campaignId))
+        .where(and(eq(docs.id, id), eq(campaigns.userId, user.id)));
       if (!doc) {
         return Response.json({ error: "Not found" }, { status: 404 });
       }
 
-      await sql`DELETE FROM docs WHERE id = ${id}`;
-      await sql`UPDATE campaigns SET updated_at = NOW() WHERE id = ${doc.campaign_id}`;
+      await db.delete(docs).where(eq(docs.id, id));
+      await db
+        .update(campaigns)
+        .set({ updatedAt: new Date() })
+        .where(eq(campaigns.id, doc.campaignId));
 
       return Response.json({ ok: true });
     },

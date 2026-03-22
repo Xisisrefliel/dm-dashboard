@@ -1,4 +1,6 @@
-import { sql } from "../db";
+import { db } from "../db";
+import { users, sessions } from "../db/schema";
+import { eq, and, gt } from "drizzle-orm";
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const SESSION_TTL_S = SESSION_TTL_MS / 1000;
@@ -21,14 +23,17 @@ export async function getSession(req: Request) {
   const token = cookies.session;
   if (!token) return null;
 
-  const [user] = await sql`
-    SELECT u.id, u.email, u.display_name
-    FROM users u
-    JOIN sessions s ON s.user_id = u.id
-    WHERE s.token = ${token} AND s.expires_at > NOW()
-  `;
+  const [row] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      displayName: users.displayName,
+    })
+    .from(users)
+    .innerJoin(sessions, eq(sessions.userId, users.id))
+    .where(and(eq(sessions.token, token), gt(sessions.expiresAt, new Date())));
 
-  return user || null;
+  return row || null;
 }
 
 function sessionCookie(token: string, maxAge: number): string {
@@ -48,7 +53,10 @@ export const authRoutes = {
         );
       }
 
-      const [existing] = await sql`SELECT id FROM users WHERE email = ${email}`;
+      const [existing] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, email));
       if (existing) {
         return Response.json(
           { error: "Email already registered" },
@@ -57,21 +65,23 @@ export const authRoutes = {
       }
 
       const passwordHash = await Bun.password.hash(password);
-      const [user] = await sql`
-        INSERT INTO users (email, password_hash, display_name)
-        VALUES (${email}, ${passwordHash}, ${displayName})
-        RETURNING id, email, display_name
-      `;
+      const [user] = await db
+        .insert(users)
+        .values({ email, passwordHash, displayName })
+        .returning({
+          id: users.id,
+          email: users.email,
+          displayName: users.displayName,
+        });
 
       const token = crypto.randomUUID();
       const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
-      await sql`
-        INSERT INTO sessions (user_id, token, expires_at)
-        VALUES (${user.id}, ${token}, ${expiresAt})
-      `;
+      await db
+        .insert(sessions)
+        .values({ userId: user.id, token, expiresAt });
 
       return Response.json(
-        { id: user.id, email: user.email, displayName: user.display_name },
+        { id: user.id, email: user.email, displayName: user.displayName },
         {
           status: 201,
           headers: { "Set-Cookie": sessionCookie(token, SESSION_TTL_S) },
@@ -91,9 +101,11 @@ export const authRoutes = {
         );
       }
 
-      const [user] =
-        await sql`SELECT * FROM users WHERE email = ${email}`;
-      if (!user || !(await Bun.password.verify(password, user.password_hash))) {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email));
+      if (!user || !(await Bun.password.verify(password, user.passwordHash))) {
         return Response.json(
           { error: "Invalid email or password" },
           { status: 401 },
@@ -102,13 +114,12 @@ export const authRoutes = {
 
       const token = crypto.randomUUID();
       const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
-      await sql`
-        INSERT INTO sessions (user_id, token, expires_at)
-        VALUES (${user.id}, ${token}, ${expiresAt})
-      `;
+      await db
+        .insert(sessions)
+        .values({ userId: user.id, token, expiresAt });
 
       return Response.json(
-        { id: user.id, email: user.email, displayName: user.display_name },
+        { id: user.id, email: user.email, displayName: user.displayName },
         {
           headers: { "Set-Cookie": sessionCookie(token, SESSION_TTL_S) },
         },
@@ -121,7 +132,7 @@ export const authRoutes = {
       const cookies = parseCookies(req);
       const token = cookies.session;
       if (token) {
-        await sql`DELETE FROM sessions WHERE token = ${token}`;
+        await db.delete(sessions).where(eq(sessions.token, token));
       }
       return Response.json(
         { ok: true },
@@ -142,7 +153,7 @@ export const authRoutes = {
       return Response.json({
         id: user.id,
         email: user.email,
-        displayName: user.display_name,
+        displayName: user.displayName,
       });
     },
   },
