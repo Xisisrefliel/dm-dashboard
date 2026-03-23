@@ -1,251 +1,150 @@
 # DM Dashboard
 
-A full-featured Dungeon Master companion app for D&D 5e and other tabletop RPGs. Manage campaigns, locations, NPCs, session notes, and rules — all in one place with a polished Material Design 3 dark interface.
+**Your tabletop campaign, all in one place.**
 
-## Features
+DM Dashboard is a modern companion app for D&D 5e and tabletop RPGs — built for Dungeon Masters who want to run better sessions and players who want to bring characters to life. Manage worlds, build characters, invite your party, and keep everything at your fingertips with a beautiful dark interface that feels as immersive as the game itself.
 
-### Campaign Management
-- **Multi-campaign support** — Create and switch between multiple campaigns, each with its own color theme, categories, and documents
-- **Custom categories** — Organize content into categories like Locations, NPCs, Sessions, and Rules (or create your own)
-- **Nested documents** — Create hierarchical notes with parent/child relationships and tree navigation
-- **Markdown content** — Write and preview content using markdown with a built-in renderer
-- **Document pinning** — Pin frequently-used documents for quick access in a dedicated panel
-- **Hover previews** — Preview document content by hovering over entries in the sidebar
-- **Full-text search** — Search across all documents in a campaign
+---
 
-### SRD 5e Reference
-Built-in, searchable System Reference Document content:
-- **Spellbook** — All SRD spells with filtering by level, school, and class
-- **Bestiary** — Monster stat blocks with CR and type filters
-- **Classes** — Class details with features, proficiencies, and progression tables
-- **Races** — Race descriptions with traits and ability score modifiers
-- **Rules** — Browsable 5e rules organized by section
+## For Dungeon Masters
 
-### DM Tools
-- **Dice Roller** — Roll any standard die (d4, d6, d8, d10, d12, d20, d100) with roll history, critical hit/fumble detection, and animated results
-- **Initiative Tracker** — Track combat initiative order with HP, add monsters directly from the bestiary, and cycle through turns
-- **Character Creator** — Step-by-step character creation with race, class, and background selection featuring illustrated cards
+### Run Your World
 
-### Design
-- **Material Design 3** dark theme with pastel olive/green color tokens
-- **Per-campaign color theming** — Each campaign derives its own palette from a chosen accent color
-- **Material Symbols Outlined** icon font (served locally)
-- **Responsive layout** with collapsible sidebar and right panel
+Create and manage multiple campaigns, each with its own color theme and organizational structure. Write location descriptions, NPC backstories, session recaps, and house rules — all in rich markdown with support for callouts, tables, and auto-linked references between documents.
+
+- **Nested documents** with parent-child hierarchy and tree navigation
+- **Custom categories** to organize content the way your world works
+- **Full-text search** to find anything across your entire campaign
+- **Pin documents** for instant access to the notes you reach for mid-session
+- **Hover previews** to peek at content without losing your place
+
+### Built-In SRD Reference
+
+No more tab-switching. The complete 5e System Reference Document is searchable and browsable right inside your dashboard:
+
+- **Spellbook** — Every SRD spell, filterable by level, school, and class
+- **Bestiary** — 300+ monster stat blocks with CR and type filters, one click to add to initiative
+- **Classes & Races** — Full details with features, proficiencies, traits, and progression tables
+- **Rules** — The complete 5e ruleset organized by chapter and section
+
+### DM Tools That Just Work
+
+- **Dice Roller** — Roll any die with animated results, crit/fumble detection, and roll history
+- **Initiative Tracker** — Track turn order and HP, add monsters straight from the bestiary, cycle through rounds effortlessly
+
+---
+
+## For Players
+
+### Build Your Character
+
+A guided, step-by-step character creator walks you through every choice with illustrated cards and detailed descriptions:
+
+1. **Race** — Choose from 9 playable races, each with hand-picked artwork
+2. **Class** — Pick from all 12 classes with class-specific visuals
+3. **Background** — 12 backgrounds with thematic art and story hooks
+4. **Ability Scores** — Point Buy, Standard Array, or manual entry with racial modifiers auto-applied
+5. **Alignment** — Answer a personality questionnaire or pick directly from the alignment grid
+6. **Equipment** — Class-specific gear selections with sensible defaults
+7. **Spells** — Choose cantrips and leveled spells for spellcasting classes
+
+### AI-Generated Portraits
+
+Bring your character to life with AI-generated portrait art. Describe your vision and get a unique illustration styled after classic fantasy art — automatically tailored to your race, class, and background.
+
+### Your Character Library
+
+Save and manage multiple characters. Edit them anytime, and bring any character with you when you join a campaign.
+
+---
+
+## Play Together
+
+### Invite Your Party
+
+DMs generate shareable invite links to bring players into their campaigns. Control access with optional expiration times and usage limits — or revoke links anytime.
+
+### Share Campaign Materials
+
+When players join, they bring a character from their library. DMs see the full party roster with character details, ability scores, HP, and AC — everything needed to run the table. Flag documents as shared to make lore, maps, and session recaps visible to your players.
+
+### Stay in Sync
+
+Character updates propagate across campaigns automatically. When a player levels up or swaps gear, every campaign they're part of reflects the change.
+
+---
+
+## Designed for the Table
+
+DM Dashboard is built with **Material Design 3** and a dark theme that keeps the focus on your content — not on bright UI glare at 11 PM.
+
+- **Per-campaign color theming** — each campaign gets its own derived color palette
+- **Responsive layout** — collapsible sidebar and panels adapt to any screen
+- **Haptic feedback** — tactile responses on supported devices for a polished feel
+- **Smooth animations** — ripple effects, roll animations, and transitions throughout
+
+---
 
 ## Tech Stack
 
-| Layer     | Technology                                                  |
-| --------- | ----------------------------------------------------------- |
-| Runtime   | [Bun](https://bun.sh)                                      |
-| Frontend  | React 19 (JSX, CSS-in-JS inline styles)                    |
-| Backend   | `Bun.serve()` with route-based API handlers                |
-| Database  | PostgreSQL via [`postgres`](https://github.com/porsager/postgres) (JS driver) |
-| Bundler   | Bun's built-in HTML imports (no Vite/Webpack)              |
-| Auth      | Cookie-based sessions with `Bun.password` bcrypt hashing   |
+| Layer    | Technology                                             |
+| -------- | ------------------------------------------------------ |
+| Runtime  | [Bun](https://bun.sh)                                 |
+| Frontend | React 19 (JSX, CSS-in-JS)                             |
+| Backend  | `Bun.serve()` with route-based API handlers            |
+| Database | PostgreSQL via [postgres.js](https://github.com/porsager/postgres) |
+| Bundler  | Bun HTML imports (no Vite/Webpack)                     |
+| Auth     | Cookie-based sessions with bcrypt hashing              |
+| AI Art   | Replicate API (Seedream model)                         |
 
-## Prerequisites
-
-- **[Bun](https://bun.sh)** v1.1+ — Install with `curl -fsSL https://bun.sh/install | bash`
-- **PostgreSQL** — A running PostgreSQL instance (local or hosted). [Neon](https://neon.tech), [Supabase](https://supabase.com), or any Postgres provider works.
+---
 
 ## Getting Started
 
-### 1. Clone the repository
+### Prerequisites
+
+- **[Bun](https://bun.sh)** v1.1+ — `curl -fsSL https://bun.sh/install | bash`
+- **PostgreSQL** — Local or hosted ([Neon](https://neon.tech), [Supabase](https://supabase.com), or any provider)
+
+### Setup
 
 ```bash
+# Clone and install
 git clone https://github.com/YOUR_USERNAME/dm-dashboard.git
 cd dm-dashboard
-```
-
-### 2. Install dependencies
-
-```bash
 bun install
-```
 
-### 3. Configure environment
+# Configure database
+echo 'DATABASE_URL=postgres://user:password@localhost:5432/dm_dashboard' > .env
 
-Create a `.env` file in the project root (Bun auto-loads it — no dotenv needed):
-
-```env
-DATABASE_URL=postgres://user:password@host:5432/dbname?sslmode=require
-```
-
-Replace the connection string with your PostgreSQL credentials. If running Postgres locally without SSL:
-
-```env
-DATABASE_URL=postgres://user:password@localhost:5432/dm_dashboard
-```
-
-### 4. Run database migrations
-
-Migrations run automatically on server startup, but you can also run them manually:
-
-```bash
-bun src/db/migrate.ts
-```
-
-This creates the following tables:
-- `users` — User accounts with hashed passwords
-- `sessions` — Auth session tokens (30-day TTL)
-- `campaigns` — Campaigns with name, slug, description, and color
-- `categories` — Custom document categories per campaign
-- `docs` — Documents with markdown content, icons, and parent-child nesting
-
-### 5. Start the development server
-
-```bash
+# Start the dev server
 bun dev
 ```
 
-The app will be available at `http://localhost:3000` (default Bun port) with hot module reloading enabled.
+Open `http://localhost:3000`, create an account, and start building your first campaign.
 
-### 6. Create an account
+### Scripts
 
-Open the app in your browser. You'll see the auth screen — register with an email, password, and display name to get started. Then create your first campaign.
+| Command       | Description                              |
+| ------------- | ---------------------------------------- |
+| `bun dev`     | Dev server with hot reload               |
+| `bun start`   | Production server                        |
+| `bun build`   | Bundle frontend to `dist/`               |
+| `bun migrate` | Run database migrations                  |
+| `bun test`    | Run tests                                |
 
-## Scripts
-
-| Command        | Description                                           |
-| -------------- | ----------------------------------------------------- |
-| `bun dev`      | Start dev server with HMR (`bun --hot src/index.ts`)  |
-| `bun start`    | Start production server                               |
-| `bun build`    | Bundle frontend to `dist/` for production              |
-| `bun migrate`  | Run database migrations manually                       |
-| `bun test`     | Run tests                                              |
-
-## Project Structure
-
-```
-src/
-├── index.ts                 # Server entry point (Bun.serve)
-├── index.html               # HTML shell (loads frontend.tsx)
-├── frontend.tsx              # React DOM root
-├── App.jsx                  # App shell — auth, routing, campaign selection
-├── index.css                # Global styles
-│
-├── api/
-│   ├── auth.ts              # Register, login, logout, session endpoints
-│   ├── campaigns.ts         # CRUD for campaigns
-│   ├── docs.ts              # CRUD for documents
-│   └── categories.ts        # Manage campaign categories
-│
-├── db/
-│   ├── index.ts             # PostgreSQL connection (postgres.js)
-│   └── migrate.ts           # Schema migrations (auto-run on startup)
-│
-├── components/
-│   ├── DMDashboard.jsx      # Main dashboard — sidebar, content viewer, panels
-│   ├── AuthScreen.jsx       # Login / register form
-│   ├── CampaignHome.jsx     # Campaign list and creation
-│   ├── CharacterCreator.jsx # Step-by-step character builder
-│   ├── DiceRoller.jsx       # Dice rolling tool
-│   ├── InitTracker.jsx      # Initiative tracker
-│   ├── SpellList.jsx        # SRD spell browser
-│   ├── SpellCard.jsx        # Individual spell display
-│   ├── MonsterList.jsx      # SRD monster browser
-│   ├── MonsterStatBlock.jsx # Monster stat block display
-│   ├── ClassList.jsx        # SRD class browser
-│   ├── ClassDetail.jsx      # Class details view
-│   ├── RaceList.jsx         # SRD race browser
-│   ├── RaceDetail.jsx       # Race details view
-│   ├── SRDRulesViewer.jsx   # 5e rules browser
-│   ├── DocPreviewCard.jsx   # Hover preview tooltip
-│   ├── PinnedPanel.jsx      # Pinned documents panel
-│   └── ui/
-│       ├── Icon.jsx         # Material Symbols icon component
-│       ├── Ripple.jsx       # Material ripple effect
-│       ├── Chip.jsx         # Filter chip component
-│       └── ContextMenu.jsx  # Right-click context menu
-│
-├── data/
-│   ├── sampleCampaign.js    # Default categories, icon options, colors
-│   ├── srd-spells.json      # SRD 5e spell data
-│   ├── srd-monsters.json    # SRD 5e monster data
-│   ├── srd-rules.json       # SRD 5e rules
-│   ├── srd-classes.json     # SRD 5e class data
-│   └── srd-races.json       # SRD 5e race data
-│
-├── utils/
-│   ├── renderMarkdown.js    # Markdown-to-HTML renderer
-│   └── colorUtils.js        # Palette derivation from hex colors
-│
-└── assets/
-    ├── classes/             # Class artwork (12 images)
-    ├── races/               # Race artwork (9 images)
-    └── backgrounds/         # Background artwork (12 images)
-```
-
-## API Endpoints
-
-### Authentication
-| Method | Endpoint             | Description                  |
-| ------ | -------------------- | ---------------------------- |
-| POST   | `/api/auth/register` | Create account               |
-| POST   | `/api/auth/login`    | Log in (sets session cookie) |
-| POST   | `/api/auth/logout`   | Log out (clears session)     |
-| GET    | `/api/auth/me`       | Get current user             |
-
-### Campaigns
-| Method | Endpoint              | Description            |
-| ------ | --------------------- | ---------------------- |
-| GET    | `/api/campaigns`      | List user's campaigns  |
-| POST   | `/api/campaigns`      | Create a campaign      |
-| GET    | `/api/campaigns/:id`  | Get campaign (by UUID or slug) |
-| PUT    | `/api/campaigns/:id`  | Update campaign        |
-| DELETE | `/api/campaigns/:id`  | Delete campaign        |
-
-### Documents
-| Method | Endpoint                             | Description       |
-| ------ | ------------------------------------ | ----------------- |
-| POST   | `/api/campaigns/:campaignId/docs`    | Create a document |
-| PUT    | `/api/docs/:id`                      | Update a document |
-| DELETE | `/api/docs/:id`                      | Delete a document |
-
-### Categories
-| Method | Endpoint                                   | Description             |
-| ------ | ------------------------------------------ | ----------------------- |
-| PUT    | `/api/campaigns/:campaignId/categories`    | Replace all categories  |
-| POST   | `/api/campaigns/:campaignId/categories`    | Add a category          |
+---
 
 ## Deployment
 
-### Production build
-
 ```bash
-bun build
+bun build && bun start
 ```
 
-This bundles the frontend into `dist/` with minification and sourcemaps.
+Set `DATABASE_URL` in your environment and deploy anywhere that runs Bun — Railway, Render, Fly.io, or any VPS. Migrations run automatically on startup.
 
-### Running in production
-
-```bash
-bun start
-```
-
-This runs the server with `NODE_ENV=production`, which:
-- Disables HMR and dev console
-- Enables `Secure` flag on session cookies
-
-### Environment variables
-
-| Variable       | Required | Description                          |
-| -------------- | -------- | ------------------------------------ |
-| `DATABASE_URL` | Yes      | PostgreSQL connection string         |
-| `NODE_ENV`     | No       | Set to `production` for prod mode    |
-
-### Deploy to a VPS / Cloud
-
-1. Ensure Bun is installed on the server
-2. Clone the repo and run `bun install`
-3. Set `DATABASE_URL` in your environment
-4. Run `bun start` (use a process manager like `pm2` or `systemd` to keep it running)
-
-### Deploy to Railway / Render / Fly.io
-
-Most platforms that support Node.js can run Bun. Set the build command to `bun install` and the start command to `bun start`. Ensure `DATABASE_URL` is configured as an environment variable pointing to your Postgres instance.
+---
 
 ## License
 
-This project uses SRD 5e content provided under the [Open Gaming License (OGL)](https://dnd.wizards.com/resources/systems-reference-document).
+SRD 5e content provided under the [Open Gaming License (OGL)](https://dnd.wizards.com/resources/systems-reference-document).
