@@ -17,6 +17,16 @@
 - Mirja kann als nervöser, aber nützlicher Kontakt überleben.
 - Der Schätzer bleibt auf freiem Fuß, wenn du ihn als Kampagnenhaken behalten willst.
 
+> [!tip] DM-Tipp: Spieler zusammenfassen lassen
+> Lass die Spieler selbst erzählen, welche Beweise sie dem Rat vorlegen. Wenn sie etwas vergessen, darf Edrik nervös ergänzen. So fühlt sich die Auflösung verdient an, ohne dass sie wegen Gedächtnislücken scheitert.
+
+## Mögliche Abschlussfragen
+
+- Welche Beweise legt ihr zuerst vor?
+- Fordert ihr harte Bestrafung für Volkwin Voss oder wollt ihr ihn als Informanten behalten?
+- Was passiert mit dem Ring?
+- Wem vertraut ihr das Manifest an?
+
 ## Belohnungen
 
 - 50 GM pro Charakter aus dem Vermögen der Familie Murnau.

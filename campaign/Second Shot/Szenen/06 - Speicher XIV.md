@@ -21,6 +21,9 @@
 | Stärke | 15 | Schloss laut aufbrechen. |
 | Gruppen-Heimlichkeit | 12 | Verbliebene Wachen oder Agenten überraschen. |
 
+> [!tip] DM-Tipp: Mehrere Lösungswege akzeptieren
+> Die Gruppe muss nicht heimlich sein. Schloss knacken, aufbrechen, tricksen, Dachfenster suchen oder Wachen ablenken sind alles gute Lösungen. Setze passende SGs und lass die Konsequenzen aus der Methode entstehen.
+
 ## Empfohlener Höhepunkt
 
 Für ein stärkeres One-Shot-Finale kann noch ein Agent des Schätzers anwesend sein.
@@ -36,6 +39,18 @@ Ziele des Agenten:
 ### Verfluchte Waren
 
 > Die Kisten enthalten Gegenstände, bei denen sich eure Haut zusammenzieht: ein Silberspiegel, dessen Spiegelbild einen halben Atemzug zu spät reagiert; Knochenwürfel, die immer dieselbe Zahl zeigen; eine Spieluhr, die rückwärts spielt; und ein Porträt, dessen Motiv sich verändert, sobald niemand direkt hinsieht.
+
+**Mögliche Proben:**
+
+| Situation | Probe | SG | Ergebnis |
+|---|---|---:|---|
+| Manifest durchsuchen | Nachforschungen | 12 | Alarichs Name und weitere Kunden werden gefunden. |
+| Siegel deuten | Geschichte oder Nachforschungen | 13 | Die Waage ist kein offizielles Handelssiegel, sondern eine Signatur. |
+| Gegenstände prüfen | Arkane Kunde | 12 | Mehrere Objekte tragen schwache Flüche. |
+| Bodenversteck finden | Nachforschungen | 14 | 30 GM und Schneiderquittung. |
+
+> [!tip] DM-Tipp: Finale Beweise nicht verstecken
+> Das Manifest und das Siegel sollten gefunden werden. Proben liefern Zusatzinfos, bessere Beweise oder mehr Kontext, aber der Fall darf hier nicht an einem schlechten Wurf scheitern.
 
 ### Arbeitstisch
 

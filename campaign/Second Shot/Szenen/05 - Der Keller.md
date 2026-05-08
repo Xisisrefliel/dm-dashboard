@@ -10,6 +10,9 @@
 - Die Gruppe durchsucht das Anwesen.
 - Der verfluchte Ring reagiert, wenn er in die Nähe des Kellers kommt.
 
+> [!tip] DM-Tipp: Optional heißt wirklich optional
+> Der Keller ist gut für Stimmung und Kleriker/Zauberer-Spotlight, aber nicht zwingend für die Lösung. Wenn die Sitzung lang wird, kürze ihn stark oder lass nur die Schatulle und die Kälte finden.
+
 ## Vorlesetext
 
 > Eine schmale Steintreppe führt hinter der Küche hinab. Mit jeder Stufe fällt die Temperatur. Euer Atem beschlägt. Feuchtigkeit perlt an den Wänden.
@@ -23,6 +26,15 @@
 Drei Skelette erheben sich, sobald jemand die Schwelle der Kammer überschreitet.
 
 Halte diesen Kampf kurz. Wenn die Zeit knapp ist, nutze nur zwei Skelette oder lass **Untote vertreiben** die Szene dramatisch beenden.
+
+## Mögliche Proben
+
+| Situation | Probe | SG | Ergebnis |
+|---|---|---:|---|
+| Kälte als magisch erkennen | Arkane Kunde oder Religion | 12 | Die Kälte hängt mit Nekromantie zusammen. |
+| Knochen identifizieren | Naturkunde oder Heilkunde | 10 | Größtenteils Tierknochen, aber nicht alle. |
+| Fluch kurz unterdrücken | Arkane Kunde oder Religion | 13 | Der Ring kann sicher in die Schatulle gelegt werden. |
+| Misserfolg beim Ring | - | - | 1W4 nekrotischer Schaden, neuer Versuch möglich. |
 
 ## Kleriker-Moment
 

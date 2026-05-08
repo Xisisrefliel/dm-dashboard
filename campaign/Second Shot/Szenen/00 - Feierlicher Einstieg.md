@@ -32,6 +32,9 @@ Stelle ein oder zwei davon, nicht alle.
 
 ## SC-Momente
 
+> [!tip] DM-Tipp: Einstieg ohne Druck
+> Lass die ersten Minuten locker sein. Hier geht es darum, dass die Spieler ihre Figuren zeigen können. Frage lieber "Wie reagierst du?" als sofort nach Würfen.
+
 ### Elfischer Waldläufer
 
 Der Waldläufer bemerkt jemanden draußen vor der Taverne.
@@ -45,6 +48,17 @@ Wenn der Waldläufer nachforscht:
 - Sie will hineingehen, traut sich aber nicht.
 - Es ist Edrik.
 
+**Mögliche Proben:**
+
+| Situation | Probe | SG | Ergebnis |
+|---|---|---:|---|
+| Der Waldläufer achtet auf die Straße | Wahrnehmung | 10 | Er bemerkt den Beobachter eindeutig. |
+| Er will einschätzen, ob Gefahr droht | Motiv erkennen | 10 | Die Person wirkt nervös, nicht aggressiv. |
+| Er folgt unauffällig nach draußen | Heimlichkeit | 12 | Er kommt nahe heran, ohne Edrik zu erschrecken. |
+
+> [!tip] DM-Tipp: Kompetenz belohnen
+> Wenn der Waldläufer aktiv aus dem Fenster schaut, gib ihm den Beobachter auch ohne Wurf. Der Wurf entscheidet nur, ob er zusätzlich erkennt, dass Edrik Angst hat.
+
 ### Goliath-Zauberer
 
 Ein angetrunkener Hafenarbeiter hält den Goliath für reine Muskelkraft.
@@ -54,6 +68,16 @@ Ein angetrunkener Hafenarbeiter hält den Goliath für reine Muskelkraft.
 Wenn der Zauberer Magie statt Körperkraft nutzt:
 
 > Die Kiste bewegt sich, ohne dass du sie berührst. Das Grinsen des Hafenarbeiters stirbt ihm mitten im Gesicht weg. Um euch herum wird aus Gelächter ein beeindrucktes Murmeln. Jemand flüstert: "Bei den Göttern. Der Berg kann zaubern."
+
+**Mögliche Proben:**
+
+| Situation | Probe | SG | Ergebnis |
+|---|---|---:|---|
+| Magischer Trick soll Eindruck machen | Arkane Kunde oder Zauberattribut | 10 | Die Menge ist beeindruckt. |
+| Besonders theatralische Vorführung | Auftreten | 12 | Die Taverne jubelt, jemand gibt eine Runde aus. |
+
+> [!tip] DM-Tipp: Keine Strafe für Stil
+> Wenn der Zauberer nur einen harmlosen Effekt beschreibt, mach daraus keinen gefährlichen Patzer. Das ist ein Spotlight-Moment, kein Test.
 
 ### Zwergenbarde, Scharlatan
 
@@ -68,6 +92,17 @@ Mögliche Folgen:
 - Sie lacht, wenn er gut kontert, und spendiert ein Getränk.
 - Sie will das Geld ihres Vetters zurück.
 - Sie ruft ihn laut bei einem falschen alten Namen.
+
+**Mögliche Proben:**
+
+| Situation | Probe | SG | Ergebnis |
+|---|---|---:|---|
+| Der Barde redet sich charmant heraus | Täuschung oder Überzeugen | 12 | Die Frau lacht und lässt es gut sein. |
+| Er macht daraus eine Show | Auftreten | 12 | Die Szene wird zur Unterhaltung für die Taverne. |
+| Er versucht, sie einzuschüchtern | Einschüchtern | 13 | Sie lässt ihn in Ruhe, aber die Stimmung kippt kurz. |
+
+> [!tip] DM-Tipp: Hintergrund benutzen
+> Der Scharlatan-Hintergrund ist eine Einladung für alte Namen, kleine Lügen und peinliche Bekanntschaften. Nutze das für Humor, nicht als harte Strafe.
 
 ### Vierter SC
 

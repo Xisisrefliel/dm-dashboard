@@ -37,6 +37,15 @@
 | Überzeugen | 10 | Er erinnert sich, dass das Paket nach einer Auktion kam. |
 | Einschüchtern | 12 | Er bricht zusammen und erzählt alles, ist danach aber schwer zu beruhigen. |
 
+> [!tip] DM-Tipp: Wann würfeln?
+> Wenn die Spieler Edrik einfach anhören, brauchst du keinen Wurf. Er will ihnen helfen. Frage erst nach Motiv erkennen, wenn jemand ausdrücklich misstrauisch ist, oder nach Überzeugen, wenn sie mehr Details wollen.
+
+## Gute Fragen an die Spieler
+
+- Wer glaubt Edrik sofort, und wer bleibt skeptisch?
+- Welche Frage stellt ihr ihm zuerst?
+- Geht ihr sofort mit oder wollt ihr vorher noch etwas in der Taverne klären?
+
 ## DM-Notizen
 
 Diese Szene soll kein langer Verhandlungspunkt werden. Edrik ist sympathisch, dringend und offensichtlich überfordert.

@@ -32,6 +32,26 @@
 | Bücherregale | Nachforschungen | 15 | Ein Buch über Flüche und Antiquitäten wurde kürzlich benutzt. |
 | Kerze | Wahrnehmung | 12 | Brannte ungefähr acht Stunden. Alarich arbeitete bis tief in die Nacht. |
 
+> [!tip] DM-Tipp: Tatort leiten
+> Lass die Spieler zuerst frei sagen, was sie untersuchen. Wenn sie "Ich schaue mir den Schreibtisch an" sagen, frage nach Nachforschungen. Bei der Leiche ist Heilkunde passend. Bei Magie am Ring sind Arkane Kunde, Religion oder Magie entdecken passend.
+
+## Welche Probe passt wann?
+
+- **Wahrnehmung:** sichtbare Dinge bemerken, z. B. Pollen, Kerze, ungewöhnliche Kälte.
+- **Nachforschungen:** aktiv suchen, Schubladen prüfen, Papiere lesen, Details verbinden.
+- **Heilkunde:** Leiche, Todesursache, Verfall, Giftzeichen.
+- **Arkane Kunde/Religion:** Ring, Fluch, nekrotische Aura.
+- **Naturkunde:** Pollen und Verpackungsblüten.
+
+## Wenn Würfe scheitern
+
+Wichtige Spuren sollen trotzdem auftauchen, nur weniger klar.
+
+- Pollen-Misserfolg: "Da liegt seltsamer orangener Staub."
+- Ring-Misserfolg: "Der Ring ist unnatürlich kalt."
+- Brief-Misserfolg: Edrik erinnert später an Alarichs seltsame Notizen.
+- Keine Richtung: Ein Diener erwähnt den Keller oder das Auktionshaus.
+
 ## Wenn niemand den Ring untersucht
 
 Gib Kleriker, Druide, Waldläufer oder Zauberer einen Impuls.

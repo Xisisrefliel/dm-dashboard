@@ -18,12 +18,27 @@
 - Mirja soll ernsthaft gefährdet sein, aber nicht automatisch sterben.
 - Fällt der Spion unter die Hälfte seiner Trefferpunkte, versucht er zu fliehen.
 
+> [!tip] DM-Tipp: Kampfziele klar machen
+> Die Gegner wollen nicht einfach bis zum Tod kämpfen. Der Spion will das Buch und Mirja ausschalten. Die Schläger wollen Geld verdienen und überleben. Dadurch kannst du den Kampf schneller und glaubwürdiger beenden.
+
 ## Gelände
 
 - Ausstellungstische geben halbe Deckung.
 - Kisten sind schwieriges Gelände.
 - Die obere Galerie ist 3 Meter hoch.
 - Zerbrechliche Auktionsware kann für Chaos und Stimmung zerschlagen werden.
+
+## Mögliche Proben im Kampf
+
+| Situation | Probe | SG | Ergebnis |
+|---|---|---:|---|
+| Mirja aus der Gefahrenzone ziehen | Athletik oder Akrobatik | 12 | Mirja ist hinter Deckung. |
+| Über die Tische springen | Akrobatik | 12 | Schnellere Bewegung ohne schwieriges Gelände. |
+| Den Spion am Fliehen hindern | Athletik | 13 | Der Spion wird aufgehalten oder verlangsamt. |
+| Einen verletzten Schläger zur Aufgabe bringen | Einschüchtern | 13 | Er ergibt sich. |
+
+> [!tip] DM-Tipp: Spielerideen zulassen
+> Wenn jemand eine coole Idee mit Kisten, Teppichen oder Porzellan hat, setze einen SG zwischen 10 und 14 und lass es passieren. Action-Szenen leben von solchen Momenten.
 
 ## Nach dem Kampf
 
