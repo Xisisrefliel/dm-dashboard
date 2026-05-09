@@ -73,6 +73,9 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
   const [docs, setDocs] = useState<Doc[]>(campaign.docs);
   const [cat, setCat] = useState<string>("locations");
   const [doc, setDoc] = useState<Doc | null>(campaign.docs[0] || null);
+  const [openTabs, setOpenTabs] = useState<string[]>(
+    campaign.docs[0] ? [campaign.docs[0].id] : [],
+  );
   const [pinned, setPinned] = useState<Doc[]>([]);
   const [search, setSearch] = useState<string>("");
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
@@ -131,6 +134,10 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
   const catItems = useMemo(
     () => docs.filter((d) => d.category === cat),
     [docs, cat],
+  );
+  const openTabDocs = useMemo(
+    () => openTabs.map((id) => docs.find((d) => d.id === id)).filter(Boolean) as Doc[],
+    [docs, openTabs],
   );
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -261,6 +268,49 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
     setRightOpen(true);
   };
 
+  const openDoc = (item: Doc) => {
+    setOpenTabs((tabs) =>
+      tabs.includes(item.id) ? tabs : [...tabs, item.id],
+    );
+    setDoc(item);
+    setCat(item.category);
+  };
+
+  const closeTab = (id: string) => {
+    setOpenTabs((tabs) => {
+      const nextTabs = tabs.filter((tabId) => tabId !== id);
+      if (doc?.id === id) {
+        const closedIndex = tabs.indexOf(id);
+        const nextId = nextTabs[Math.max(0, closedIndex - 1)] || nextTabs[0];
+        const nextDoc = nextId ? docs.find((d) => d.id === nextId) || null : null;
+        setDoc(nextDoc);
+        if (nextDoc) setCat(nextDoc.category);
+      }
+      return nextTabs;
+    });
+    setEditing(false);
+    setPasteMode(false);
+  };
+
+  const findDocByLinkName = (name: string | null) => {
+    if (!name) return null;
+    const normalize = (value: string) =>
+      value
+        .split("#")[0]!
+        .split("/")
+        .pop()!
+        .replace(/\.md$/i, "")
+        .trim()
+        .toLowerCase();
+    const exact = name.trim().toLowerCase();
+    const normalized = normalize(name);
+    return (
+      docs.find((d) => d.title.toLowerCase() === exact) ||
+      docs.find((d) => d.title.toLowerCase() === normalized) ||
+      null
+    );
+  };
+
   const selectDoc = (item: SearchResultItem | Doc | any) => {
     if (item.category === "srd-spells") {
       const spellId = item.srdId || item.id?.replace("srd-spell-", "");
@@ -288,8 +338,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
       setSelectedRuleSection(ruleId ?? null);
       setDoc(null);
     } else {
-      setDoc(item as Doc);
-      setCat(item.category!);
+      openDoc(item as Doc);
     }
     setPasteMode(false);
     setEditing(false);
@@ -318,9 +367,16 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
       }
     };
     findChildren(id);
+    const currentTabs = openTabs;
     setDocs((d) => d.filter((x) => !toRemove.has(x.id)));
     setPinned((p) => p.filter((x) => !toRemove.has(x.id)));
-    if (doc?.id && toRemove.has(doc.id)) setDoc(null);
+    setOpenTabs((tabs) => tabs.filter((id) => !toRemove.has(id)));
+    if (doc?.id && toRemove.has(doc.id)) {
+      const nextId = currentTabs.find((tabId) => !toRemove.has(tabId));
+      const nextDoc = nextId ? docs.find((d) => d.id === nextId) || null : null;
+      setDoc(nextDoc);
+      if (nextDoc) setCat(nextDoc.category);
+    }
     fetch(`/api/docs/${id}`, { method: "DELETE" });
   };
 
@@ -375,7 +431,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
     if (!res.ok) return;
     const d = await res.json();
     setDocs((x) => [...x, d]);
-    setDoc(d);
+    openDoc(d);
     if (pasteParentId) {
       setExpanded((e) => ({ ...e, [pasteParentId]: true }));
     }
@@ -872,7 +928,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
                             <Ripple
                               onClick={() => {
                                 if (renamingId !== item.id) {
-                                  setDoc(item);
+                                  openDoc(item);
                                   setPasteMode(false);
                                   setEditing(false);
                                 }
@@ -1027,6 +1083,108 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
               flexDirection: "column",
             }}
           >
+            {!isSRD && openTabDocs.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "10px 14px 8px",
+                  borderBottom: "1px solid var(--dm-outline-variant)",
+                  background: "color-mix(in srgb, var(--dm-surface) 92%, var(--dm-bg))",
+                  overflowX: "auto",
+                  flexShrink: 0,
+                }}
+              >
+                {openTabDocs.map((tabDoc) => {
+                  const active = doc?.id === tabDoc.id;
+                  return (
+                    <Ripple
+                      key={tabDoc.id}
+                      onClick={() => {
+                        openDoc(tabDoc);
+                        setPasteMode(false);
+                        setEditing(false);
+                      }}
+                      onAuxClick={(e) => {
+                        if (e.button === 1) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          closeTab(tabDoc.id);
+                        }
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        minWidth: 0,
+                        maxWidth: 220,
+                        padding: "8px 8px 8px 12px",
+                        borderRadius: 18,
+                        background: active
+                          ? "var(--dm-secondary-container)"
+                          : "transparent",
+                        color: active
+                          ? "var(--dm-on-secondary-container)"
+                          : "var(--dm-text-secondary)",
+                        border: active
+                          ? "1px solid transparent"
+                          : "1px solid var(--dm-outline-variant)",
+                        flexShrink: 0,
+                      }}
+                      title={tabDoc.title}
+                    >
+                      <Icon
+                        name={tabDoc.icon || "description"}
+                        size={16}
+                        filled={active}
+                        style={{ flexShrink: 0, opacity: active ? 1 : 0.75 }}
+                      />
+                      <span
+                        style={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          fontSize: 13,
+                          fontWeight: active ? 600 : 500,
+                        }}
+                      >
+                        {tabDoc.title}
+                      </span>
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          closeTab(tabDoc.id);
+                        }}
+                        style={{
+                          width: 22,
+                          height: 22,
+                          borderRadius: 11,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: active
+                            ? "var(--dm-on-secondary-container)"
+                            : "var(--dm-text-muted)",
+                          flexShrink: 0,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = active
+                            ? "rgba(0,0,0,0.12)"
+                            : "var(--dm-surface-bright)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "transparent";
+                        }}
+                        title="Tab schließen"
+                      >
+                        <Icon name="close" size={16} />
+                      </span>
+                    </Ripple>
+                  );
+                })}
+              </div>
+            )}
             <div style={{ flex: 1, overflow: "auto" }}>
               {cat === "srd-rules" ? (
                 <SRDRulesContent
@@ -1346,9 +1504,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
                         const link = (e.target as HTMLElement).closest("[data-doc-link]");
                         if (!link) return;
                         const name = link.getAttribute("data-doc-link");
-                        const target = docs.find(
-                          (d) => d.title.toLowerCase() === name!.toLowerCase(),
-                        );
+                        const target = findDocByLinkName(name);
                         if (target) {
                           setHoverPreview(null);
                           selectDoc(target);
@@ -1371,9 +1527,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
                         )
                           return;
                         clearTimeout(hoverTimeout.current!);
-                        const target = docs.find(
-                          (d) => d.title.toLowerCase() === name!.toLowerCase(),
-                        );
+                        const target = findDocByLinkName(name);
                         if (
                           target &&
                           (target.category === "locations" ||

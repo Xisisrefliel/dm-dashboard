@@ -5,7 +5,7 @@ import {
   docs,
   campaignMembers,
 } from "../db/schema";
-import { eq, and, ne, sql, desc, asc } from "drizzle-orm";
+import { eq, and, ne, inArray, sql, desc, asc, count } from "drizzle-orm";
 import { getSession } from "./auth";
 import { DEFAULT_CATEGORIES } from "../data/sampleCampaign.ts";
 
@@ -65,7 +65,7 @@ export const campaignRoutes = {
       if (!user)
         return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-      const owned = await db
+      const ownedRows = await db
         .select({
           id: campaigns.id,
           slug: campaigns.slug,
@@ -73,14 +73,12 @@ export const campaignRoutes = {
           description: campaigns.description,
           color: campaigns.color,
           updatedAt: campaigns.updatedAt,
-          docCount: sql<number>`(SELECT COUNT(*)::int FROM docs WHERE campaign_id = ${campaigns.id})`,
-          categoryCount: sql<number>`(SELECT COUNT(*)::int FROM categories WHERE campaign_id = ${campaigns.id})`,
         })
         .from(campaigns)
         .where(eq(campaigns.userId, user.id))
         .orderBy(desc(campaigns.updatedAt));
 
-      const joined = await db
+      const joinedRows = await db
         .select({
           id: campaigns.id,
           slug: campaigns.slug,
@@ -88,18 +86,70 @@ export const campaignRoutes = {
           description: campaigns.description,
           color: campaigns.color,
           updatedAt: campaigns.updatedAt,
-          docCount: sql<number>`(SELECT COUNT(*)::int FROM docs WHERE campaign_id = ${campaigns.id} AND shared_with_party = true)`,
-          categoryCount: sql<number>`(SELECT COUNT(*)::int FROM categories WHERE campaign_id = ${campaigns.id})`,
         })
         .from(campaigns)
         .innerJoin(campaignMembers, eq(campaignMembers.campaignId, campaigns.id))
         .where(eq(campaignMembers.userId, user.id))
         .orderBy(desc(campaigns.updatedAt));
 
-      return Response.json([
-        ...owned.map((c) => formatCampaignSummary(c, "owner")),
-        ...joined.map((c) => formatCampaignSummary(c, "member")),
+      const allIds = [
+        ...new Set([...ownedRows.map((c) => c.id), ...joinedRows.map((c) => c.id)]),
+      ];
+
+      if (allIds.length === 0) return Response.json([]);
+
+      const [docCounts, catCounts, joinedDocCounts] = await Promise.all([
+        db
+          .select({ campaignId: docs.campaignId, value: count() })
+          .from(docs)
+          .where(inArray(docs.campaignId, allIds))
+          .groupBy(docs.campaignId),
+        db
+          .select({ campaignId: categories.campaignId, value: count() })
+          .from(categories)
+          .where(inArray(categories.campaignId, allIds))
+          .groupBy(categories.campaignId),
+        db
+          .select({ campaignId: docs.campaignId, value: count() })
+          .from(docs)
+          .where(
+            and(
+              inArray(docs.campaignId, allIds),
+              eq(docs.sharedWithParty, true),
+            ),
+          )
+          .groupBy(docs.campaignId),
       ]);
+
+      const docMap = new Map(docCounts.map((r) => [r.campaignId, Number(r.value)]));
+      const catMap = new Map(catCounts.map((r) => [r.campaignId, Number(r.value)]));
+      const sharedDocMap = new Map(
+        joinedDocCounts.map((r) => [r.campaignId, Number(r.value)]),
+      );
+
+      const owned = ownedRows.map((c) =>
+        formatCampaignSummary(
+          {
+            ...c,
+            docCount: docMap.get(c.id) ?? 0,
+            categoryCount: catMap.get(c.id) ?? 0,
+          },
+          "owner",
+        ),
+      );
+
+      const joined = joinedRows.map((c) =>
+        formatCampaignSummary(
+          {
+            ...c,
+            docCount: sharedDocMap.get(c.id) ?? 0,
+            categoryCount: catMap.get(c.id) ?? 0,
+          },
+          "member",
+        ),
+      );
+
+      return Response.json([...owned, ...joined]);
     },
 
     async POST(req: Request) {
