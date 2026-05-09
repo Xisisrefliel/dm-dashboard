@@ -52,7 +52,7 @@ export default function StatsStep({ char, update, isMobile: isMobileProp, haptic
               fontSize: 13, fontWeight: 600, gap: 6, cursor: "pointer",
               background: statMode === m.id ? "var(--dm-primary)" : "transparent",
               color: statMode === m.id ? "var(--dm-on-primary, #1a1c18)" : "var(--dm-text-secondary)",
-              transition: "all .2s",
+              transition: "background-color 200ms ease, color 200ms ease",
             }}
           >
             {m.label}

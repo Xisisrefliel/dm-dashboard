@@ -493,8 +493,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
         .m3h6 { font-size: 12px; font-weight: 600; color: var(--dm-text-muted); margin: 10px 0 4px; line-height: 1.3; text-transform: uppercase; letter-spacing: 0.04em; }
         .m3body { font-size: 14px; line-height: 1.7; color: var(--dm-text-secondary); margin: 4px 0; }
         .m3code { background: var(--dm-surface-bright); padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', 'Cascadia Code', monospace; color: var(--dm-primary); }
-        .m3link { color: var(--dm-primary); cursor: pointer; font-weight: 500; text-decoration: underline; text-decoration-color: rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.3); text-underline-offset: 2px; transition: text-decoration-color 0.15s; }
-        .m3link:hover { text-decoration-color: var(--dm-primary); background: rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.08); border-radius: 3px; }
+        .m3link { color: var(--dm-primary); cursor: pointer; font-weight: 500; text-decoration: underline; text-decoration-color: rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.3); text-underline-offset: 2px; transition: text-decoration-color 150ms ease; }
         .m3hr { border: none; border-top: 1px solid var(--dm-outline-variant); margin: 16px 0; }
         .m3bq { border-left: 3px solid var(--dm-primary); padding: 10px 16px; margin: 12px 0; background: var(--dm-primary-container); border-radius: 0 12px 12px 0; font-style: italic; color: var(--dm-text-secondary); font-size: 14px; line-height: 1.6; }
         .m3list { padding-left: 20px; margin: 8px 0; }
@@ -503,13 +502,16 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
         .m3table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
         .m3table th { text-align: left; padding: 8px 12px; font-weight: 600; color: var(--dm-text); border-bottom: 2px solid var(--dm-outline-variant); }
         .m3table td { padding: 8px 12px; border-bottom: 1px solid var(--dm-surface-bright); color: var(--dm-text-secondary); }
-        .m3table tr:hover td { background: rgba(255,255,255,0.03); }
-        .m3input { padding: 10px 12px; border: 1px solid var(--dm-outline-variant); border-radius: 12px; background: transparent; color: var(--dm-text); font-size: 14px; font-family: inherit; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
-        .m3input:focus { border-color: var(--dm-primary); border-width: 2px; padding: 9px 11px; box-shadow: 0 0 0 2px rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.1); }
+        .m3input { padding: 10px 12px; border: 1px solid var(--dm-outline-variant); border-radius: 12px; background: transparent; color: var(--dm-text); font-size: 14px; font-family: inherit; outline: none; transition: border-color 200ms ease, box-shadow 200ms ease; }
+        .m3input:focus { border-color: var(--dm-primary); box-shadow: 0 0 0 1px var(--dm-primary), 0 0 0 4px rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.12); }
         .m3input::placeholder { color: var(--dm-text-muted); }
 
-        .navitem { transition: all 0.2s cubic-bezier(0.2, 0, 0, 1); }
-        .navitem:hover { background: var(--dm-surface-bright) !important; }
+        .navitem { transition: background-color 200ms var(--ease-emphasized), color 200ms var(--ease-emphasized); }
+        @media (hover: hover) and (pointer: fine) {
+          .navitem:hover { background: var(--dm-surface-bright) !important; }
+          .m3link:hover { text-decoration-color: var(--dm-primary); background: rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.08); border-radius: 3px; }
+          .m3table tr:hover td { background: rgba(255,255,255,0.03); }
+        }
 
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -629,7 +631,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
                 background: "var(--dm-surface-bright)",
                 borderRadius: 28,
                 width: 320,
-                transition: "all 0.3s",
+                transition: "background-color 200ms ease",
               }}
             >
               <Icon
@@ -701,7 +703,8 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
                   maxHeight: 400,
                   overflow: "auto",
                   zIndex: 100,
-                  animation: "m3pop 0.2s cubic-bezier(0.2,0,0,1)",
+                  transformOrigin: "top right",
+                  animation: "m3pop 200ms var(--ease-emphasized)",
                 }}
               >
                 {results.map((item, i) => (
@@ -773,7 +776,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
             style={{
               width: drawerOpen ? 280 : 0,
               minWidth: drawerOpen ? 280 : 0,
-              transition: "all 0.3s cubic-bezier(0.2, 0, 0, 1)",
+              transition: "width 300ms var(--ease-emphasized), min-width 300ms var(--ease-emphasized)",
               overflow: "hidden",
               display: "flex",
               flexDirection: "column",
@@ -965,7 +968,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
                                     borderRadius: 12,
                                     flexShrink: 0,
                                     cursor: "pointer",
-                                    transition: "background 0.15s",
+                                    transition: "background-color 150ms ease",
                                   }}
                                   onMouseEnter={(e) => e.currentTarget.style.background = "var(--dm-surface-bright)"}
                                   onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
@@ -1235,7 +1238,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
                     maxWidth: 640,
                     margin: "0 auto",
                     padding: "32px 40px",
-                    animation: "m3pop 0.3s ease",
+                    animation: "m3pop 250ms var(--ease-out-strong)",
                   }}
                 >
                   <h2 className="m3h1">
@@ -1308,7 +1311,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
                                 pasteIcon === opt.name
                                   ? "var(--dm-on-secondary-container)"
                                   : "var(--dm-text-muted)",
-                              transition: "all 0.15s ease",
+                              transition: "background-color 150ms ease, color 150ms ease",
                             }}
                             title={opt.label}
                           >
@@ -1371,7 +1374,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
                     maxWidth: 700,
                     margin: "0 auto",
                     padding: "32px 48px",
-                    animation: "m3pop 0.25s ease",
+                    animation: "m3pop 250ms var(--ease-out-strong)",
                   }}
                 >
                   <div
@@ -1607,7 +1610,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
                 background: "var(--dm-bg)",
                 display: "flex",
                 flexDirection: "column",
-                animation: "m3pop 0.2s ease",
+                animation: "m3pop 200ms var(--ease-out-strong)",
               }}
             >
               <div
@@ -1641,7 +1644,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
                         rightTab === tab.key
                           ? "var(--dm-primary)"
                           : "var(--dm-text-secondary)",
-                      transition: "all 0.2s",
+                      transition: "border-color 200ms ease, color 200ms ease",
                     }}
                   >
                     <Icon
@@ -1705,7 +1708,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
               justifyContent: "center",
               boxShadow:
                 "0 3px 12px rgba(0,0,0,0.25), 0 1px 4px rgba(0,0,0,0.15)",
-              transition: "right 0.3s cubic-bezier(0.2,0,0,1)",
+              transition: "right 300ms var(--ease-emphasized)",
               zIndex: 20,
             }}
           >

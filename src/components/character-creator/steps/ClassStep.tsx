@@ -135,7 +135,7 @@ export default function ClassStep({ char, update, next, prev, haptic, previewCla
                           color: picked ? "var(--dm-on-primary)" : disabled ? "var(--dm-text-muted)" : "var(--dm-text)",
                           border: picked ? "1px solid var(--dm-primary)" : "1px solid rgba(255,255,255,0.08)",
                           opacity: disabled ? 0.5 : 1,
-                          transition: "all 0.15s",
+                          transition: "background-color 150ms ease, color 150ms ease, border-color 150ms ease",
                         }}
                       >
                         {picked && <Icon name="check" size={14} style={{ marginRight: 4, verticalAlign: "middle" }} />}
@@ -206,7 +206,7 @@ export default function ClassStep({ char, update, next, prev, haptic, previewCla
                     flexShrink: 0, width: 100, borderRadius: 12, overflow: "hidden",
                     border: active ? "2px solid var(--dm-primary)" : "1px solid var(--dm-outline-variant)",
                     background: "var(--dm-surface)", display: "flex", flexDirection: "column",
-                    opacity: active ? 1 : 0.7, transition: "all 0.15s",
+                    opacity: active ? 1 : 0.7, transition: "opacity 150ms ease, border-color 150ms ease",
                     scrollSnapAlign: "start",
                   }}
                 >

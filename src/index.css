@@ -33,6 +33,13 @@
     color-scheme: dark;
     color: #dddede;
     background-color: #101113;
+
+    /* MD3 emphasized — used for popups, drawers, navitems */
+    --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+    /* Stronger ease-out — used for enter animations that need punch */
+    --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+    /* Stronger ease-in-out — used for on-screen movement/morph */
+    --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 * {
@@ -55,20 +62,28 @@ body {
     font-size: 14px;
     font-family: inherit;
     outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition: border-color 200ms ease, box-shadow 200ms ease;
     width: 100%;
     box-sizing: border-box;
 }
 
 .m3input:focus {
     border-color: var(--dm-primary, #9fd494);
-    border-width: 2px;
-    padding: 9px 11px;
-    box-shadow: 0 0 0 2px rgba(159, 212, 148, 0.1);
+    box-shadow: 0 0 0 1px var(--dm-primary, #9fd494),
+        0 0 0 4px rgba(159, 212, 148, 0.12);
 }
 
 .m3input::placeholder {
     color: var(--dm-text-muted, #8c9386);
+}
+
+/* Press feedback for tappable elements (desktop + mobile) */
+[data-ripple] {
+    transition: transform 160ms var(--ease-out-strong);
+}
+[data-ripple]:active {
+    transform: scale(0.97);
+    transition: transform 100ms ease-out;
 }
 
 /* Mobile responsive */
@@ -86,11 +101,17 @@ body {
         scrollbar-width: none;
         -ms-overflow-style: none;
     }
+}
 
-    /* Press feedback for tappable elements */
-    [data-ripple]:active {
-        transform: scale(0.97);
-        transition: transform 0.1s;
+/* Respect reduced-motion: keep opacity fades, kill movement/duration */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
     }
 }
 

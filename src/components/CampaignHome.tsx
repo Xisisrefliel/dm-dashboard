@@ -310,7 +310,7 @@ function CampaignHome({ campaigns, onSelect, onCreate, onDelete, onRename, user,
               maxWidth: "90vw",
               border: "1px solid var(--dm-outline-variant)",
               boxShadow: "0 16px 48px rgba(0,0,0,0.4)",
-              animation: "m3pop 0.2s cubic-bezier(0.2,0,0,1)",
+              animation: "m3pop 200ms var(--ease-emphasized)",
             }}
           >
             <h2
@@ -470,7 +470,7 @@ function CampaignHome({ campaigns, onSelect, onCreate, onDelete, onRename, user,
               maxWidth: "90vw",
               border: "1px solid var(--dm-outline-variant)",
               boxShadow: "0 16px 48px rgba(0,0,0,0.4)",
-              animation: "m3pop 0.2s cubic-bezier(0.2,0,0,1)",
+              animation: "m3pop 200ms var(--ease-emphasized)",
             }}
           >
             <h2
@@ -555,7 +555,7 @@ function CampaignHome({ campaigns, onSelect, onCreate, onDelete, onRename, user,
               maxWidth: "90vw",
               border: "1px solid var(--dm-outline-variant)",
               boxShadow: "0 16px 48px rgba(0,0,0,0.4)",
-              animation: "m3pop 0.2s cubic-bezier(0.2,0,0,1)",
+              animation: "m3pop 200ms var(--ease-emphasized)",
             }}
           >
             <h2

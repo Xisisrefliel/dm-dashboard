@@ -50,7 +50,8 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, items, onClose }) => {
         boxShadow: "0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2)",
         border: "1px solid var(--dm-outline-variant)",
         minWidth: 180,
-        animation: "m3pop 0.12s cubic-bezier(0.2,0,0,1)",
+        transformOrigin: "top left",
+        animation: "m3pop 120ms var(--ease-emphasized)",
       }}
     >
       {items.map((item, i) =>

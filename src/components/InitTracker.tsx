@@ -170,7 +170,7 @@ function InitTracker({ campaignId, prefill, onPrefillConsumed }: InitTrackerProp
             marginBottom: 4,
             background:
               i === active ? "var(--dm-secondary-container)" : "transparent",
-            transition: "all 0.2s",
+            transition: "background-color 200ms ease",
           }}
         >
           <span

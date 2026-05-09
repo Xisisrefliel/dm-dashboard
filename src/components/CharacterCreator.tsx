@@ -639,7 +639,7 @@ function CharacterCreator({
                           : "var(--dm-text-muted)",
                       fontWeight: active ? 600 : 400,
                       fontSize: 13,
-                      transition: "all 0.2s",
+                      transition: "background-color 200ms ease, color 200ms ease",
                       flexShrink: 0,
                     }}
                   >
@@ -748,7 +748,7 @@ function CharacterCreator({
                       : "var(--dm-text-muted)",
                   fontWeight: active ? 600 : 400,
                   fontSize: 13,
-                  transition: "all 0.2s",
+                  transition: "background-color 200ms ease, color 200ms ease",
                   flexShrink: 0,
                   scrollSnapAlign: "center",
                 }}

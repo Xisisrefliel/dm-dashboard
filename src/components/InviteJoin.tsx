@@ -364,7 +364,7 @@ function InviteJoin({ token, onBack }: InviteJoinProps) {
                 color: selected ? "var(--dm-on-primary)" : "var(--dm-text-muted)",
                 fontWeight: 600,
                 fontSize: 15,
-                transition: "all 0.15s",
+                transition: "background-color 150ms ease, color 150ms ease",
               }}
             >
               {joining ? "Joining..." : "Join Campaign"}

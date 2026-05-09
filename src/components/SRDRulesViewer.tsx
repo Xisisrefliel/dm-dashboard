@@ -82,7 +82,7 @@ export function SRDRulesDrawer({ Icon, Ripple, selectedSection, onSelectSection 
                   padding: "9px 16px 9px 44px", borderRadius: 28, marginBottom: 1,
                   background: selectedSection === section.id ? "var(--dm-secondary-container)" : "transparent",
                   color: selectedSection === section.id ? "var(--dm-on-secondary-container)" : "var(--dm-text-secondary)",
-                  animation: `m3slideIn 0.2s cubic-bezier(0.2,0,0,1) ${i * 0.03}s both`,
+                  animation: `m3slideIn 200ms var(--ease-emphasized) ${i * 30}ms both`,
                 }}
               >
                 <span style={{

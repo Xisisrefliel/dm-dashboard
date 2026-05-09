@@ -40,7 +40,7 @@ const Ripple: React.FC<RippleProps> = ({
       pointerEvents: "none",
     });
     el.appendChild(ripple);
-    setTimeout(() => ripple.remove(), 500);
+    ripple.addEventListener("animationend", () => ripple.remove(), { once: true });
     onClick?.(e);
   };
   return (
@@ -48,6 +48,7 @@ const Ripple: React.FC<RippleProps> = ({
       ref={ref}
       onClick={handleClick}
       className={className}
+      data-ripple=""
       style={{
         position: "relative",
         overflow: "hidden",

@@ -158,7 +158,7 @@ export default function RaceStep({ char, update, next, prev, haptic, previewRace
                     flexShrink: 0, width: 100, borderRadius: 12, overflow: "hidden",
                     border: active ? "2px solid var(--dm-primary)" : "1px solid var(--dm-outline-variant)",
                     background: "var(--dm-surface)", display: "flex", flexDirection: "column",
-                    opacity: active ? 1 : 0.7, transition: "all 0.15s",
+                    opacity: active ? 1 : 0.7, transition: "opacity 150ms ease, border-color 150ms ease",
                     scrollSnapAlign: "start",
                   }}
                 >

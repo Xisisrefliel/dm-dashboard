@@ -126,7 +126,7 @@ function PartyPanel({ campaignId, onAddToInit }: PartyPanelProps) {
                   justifyContent: "center",
                   gap: 6,
                   border: copied ? "none" : "1px solid var(--dm-outline-variant)",
-                  transition: "all 0.2s",
+                  transition: "background-color 200ms ease, color 200ms ease, border-color 200ms ease",
                 }}
               >
                 <Icon name={copied ? "check" : "content_copy"} size={16} />

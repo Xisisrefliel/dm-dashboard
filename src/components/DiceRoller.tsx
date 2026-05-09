@@ -49,7 +49,7 @@ function DiceRoller(): React.ReactElement {
               color: "var(--dm-text)",
               fontWeight: 600,
               fontSize: 14,
-              transition: "all 0.2s",
+              transition: "background-color 200ms ease",
             }}
           >
             d{d}
@@ -74,7 +74,7 @@ function DiceRoller(): React.ReactElement {
               ? "none"
               : isFumble
                 ? "fumbleShake 0.5s ease"
-                : "m3pop 0.3s cubic-bezier(0.2, 0, 0, 1)",
+                : "m3pop 300ms var(--ease-emphasized)",
           }}
         >
           <div
