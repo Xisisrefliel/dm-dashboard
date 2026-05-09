@@ -58,7 +58,10 @@ export function renderMarkdown(md: string, docTitles: string[] = []): string {
   let inTable = false,
     inBq = false,
     inCallout = false,
-    inList = false;
+    inList = false,
+    inOrderedList = false,
+    inCodeBlock = false,
+    codeBlock = "";
 
   // Sort titles longest-first to avoid partial matches
   const sortedTitles = [...docTitles].sort((a, b) => b.length - a.length);
@@ -86,6 +89,12 @@ export function renderMarkdown(md: string, docTitles: string[] = []): string {
     );
   };
 
+  const escapeHtml = (s: string): string =>
+    s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
   const fmt = (s: string): string => {
     let r = s
       .replace(/\*\*\*(.*?)\*\*\*/g, "<strong><em>$1</em></strong>")
@@ -102,6 +111,23 @@ export function renderMarkdown(md: string, docTitles: string[] = []): string {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!;
+
+    if (line.trim().startsWith("```")) {
+      if (inCodeBlock) {
+        html += `<pre class="m3pre"><code>${escapeHtml(codeBlock.replace(/\n$/, ""))}</code></pre>`;
+        codeBlock = "";
+        inCodeBlock = false;
+      } else {
+        if (inList) { html += "</ul>"; inList = false; }
+        if (inOrderedList) { html += "</ol>"; inOrderedList = false; }
+        inCodeBlock = true;
+      }
+      continue;
+    }
+    if (inCodeBlock) {
+      codeBlock += line + "\n";
+      continue;
+    }
 
     if (line.startsWith("|")) {
       if (!inTable) {
@@ -154,16 +180,28 @@ export function renderMarkdown(md: string, docTitles: string[] = []): string {
       inBq = false;
     }
 
-    if (line.match(/^- /)) {
+    if (line.match(/^\s*[-*+]\s+/)) {
+      if (inOrderedList) { html += "</ol>"; inOrderedList = false; }
       if (!inList) {
         html += '<ul class="m3list">';
         inList = true;
       }
-      html += `<li>${fmt(line.slice(2))}</li>`;
+      html += `<li>${fmt(line.replace(/^\s*[-*+]\s+/, ""))}</li>`;
+      continue;
+    } else if (line.match(/^\s*\d+\. /)) {
+      if (inList) { html += "</ul>"; inList = false; }
+      if (!inOrderedList) {
+        html += '<ol class="m3list m3olist">';
+        inOrderedList = true;
+      }
+      html += `<li>${fmt(line.replace(/^\s*\d+\. /, ""))}</li>`;
       continue;
     } else if (inList) {
       html += "</ul>";
       inList = false;
+    } else if (inOrderedList) {
+      html += "</ol>";
+      inOrderedList = false;
     }
 
     if (line.match(/^---+$/)) {
@@ -185,9 +223,11 @@ export function renderMarkdown(md: string, docTitles: string[] = []): string {
     else if (line.trim() === "") html += '<div style="height:8px"></div>';
     else html += `<p class="m3body">${fmt(line)}</p>`;
   }
+  if (inCodeBlock) html += `<pre class="m3pre"><code>${escapeHtml(codeBlock.replace(/\n$/, ""))}</code></pre>`;
   if (inTable) html += "</table>";
   if (inCallout) html += "</div>";
   if (inBq) html += "</blockquote>";
   if (inList) html += "</ul>";
+  if (inOrderedList) html += "</ol>";
   return html;
 }

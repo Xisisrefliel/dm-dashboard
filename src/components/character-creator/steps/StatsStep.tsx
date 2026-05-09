@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Icon from "../../ui/Icon.tsx";
 import Ripple from "../../ui/Ripple.tsx";
 import { useIsMobile } from "../../../hooks/useIsMobile.ts";
@@ -22,6 +23,11 @@ interface Props {
 
 export default function StatsStep({ char, update, isMobile: isMobileProp, haptic, assignedStats, adjustStat, rollStats, statMode, switchStatMode, getRacialBonus, raceData, classData }: Props) {
   const isMobile = useIsMobile();
+  const [rollSpinKey, setRollSpinKey] = useState(0);
+  const handleRoll = () => {
+    setRollSpinKey((k) => k + 1);
+    rollStats();
+  };
 
   const pointsSpent = statMode === "pointbuy"
     ? Object.values(assignedStats).reduce((sum: number, v: number) => sum + (POINT_BUY_COSTS[v] ?? 0), 0)
@@ -67,7 +73,7 @@ export default function StatsStep({ char, update, isMobile: isMobileProp, haptic
           letterSpacing: 0.5, textTransform: "uppercase",
           color: pointsRemaining < 0 ? "var(--dm-error, #ffb4ab)" : "var(--dm-text-secondary)",
         }}>
-          Points Remaining: <span style={{ color: pointsRemaining === 0 ? "#6ecf9a" : pointsRemaining < 0 ? "var(--dm-error, #ffb4ab)" : "var(--dm-primary)", fontSize: 18, fontWeight: 700 }}>{pointsRemaining}</span>
+          Points Remaining: <span style={{ color: pointsRemaining === 0 ? "#6ecf9a" : pointsRemaining < 0 ? "var(--dm-error, #ffb4ab)" : "var(--dm-primary)", fontSize: 18, fontWeight: 700, fontVariantNumeric: "tabular-nums", display: "inline-block", minWidth: 24, textAlign: "center" }}>{pointsRemaining}</span>
         </div>
       )}
 
@@ -94,7 +100,7 @@ export default function StatsStep({ char, update, isMobile: isMobileProp, haptic
           >
             <Icon name="remove" size={18} />
           </Ripple>
-          <span style={{ fontSize: 24, fontWeight: 700, color: "var(--dm-primary)", minWidth: 36, textAlign: "center" }}>
+          <span style={{ fontSize: 24, fontWeight: 700, color: "var(--dm-primary)", minWidth: 36, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
             {char.level}
           </span>
           <Ripple
@@ -108,7 +114,7 @@ export default function StatsStep({ char, update, isMobile: isMobileProp, haptic
             <Icon name="add" size={18} />
           </Ripple>
         </div>
-        <span style={{ fontSize: 12, color: "var(--dm-text-muted)" }}>
+        <span style={{ fontSize: 12, color: "var(--dm-text-muted)", fontVariantNumeric: "tabular-nums" }}>
           HP: {classData ? classData.hitDie + (char.level - 1) * (Math.floor(classData.hitDie / 2) + 1) : "\u2014"}
         </span>
       </div>
@@ -175,6 +181,7 @@ export default function StatsStep({ char, update, isMobile: isMobileProp, haptic
                     display: "flex", alignItems: "center", justifyContent: "center",
                     background: "var(--dm-surface-bright)", border: "1px solid var(--dm-outline-variant)",
                     opacity: atMin ? 0.3 : 1, cursor: atMin ? "default" : "pointer",
+                    transition: "opacity 150ms var(--ease-out-strong), background-color 150ms var(--ease-out-strong)",
                   }}
                 >
                   <Icon name="remove" size={18} />
@@ -182,6 +189,7 @@ export default function StatsStep({ char, update, isMobile: isMobileProp, haptic
                 <span style={{
                   fontSize: 22, fontWeight: 700, color: "var(--dm-primary)",
                   minWidth: 36, textAlign: "center",
+                  fontVariantNumeric: "tabular-nums",
                 }}>
                   {total}
                 </span>
@@ -192,6 +200,7 @@ export default function StatsStep({ char, update, isMobile: isMobileProp, haptic
                     display: "flex", alignItems: "center", justifyContent: "center",
                     background: "var(--dm-surface-bright)", border: "1px solid var(--dm-outline-variant)",
                     opacity: (atMax || cantIncrease) ? 0.3 : 1, cursor: (atMax || cantIncrease) ? "default" : "pointer",
+                    transition: "opacity 150ms var(--ease-out-strong), background-color 150ms var(--ease-out-strong)",
                   }}
                 >
                   <Icon name="add" size={18} />
@@ -203,6 +212,7 @@ export default function StatsStep({ char, update, isMobile: isMobileProp, haptic
                 width: 50, textAlign: "right",
                 fontSize: 20, fontWeight: 700,
                 color: mod >= 0 ? "#6ecf9a" : "var(--dm-error, #ffb4ab)",
+                fontVariantNumeric: "tabular-nums",
               }}>
                 {mod >= 0 ? `+${mod}` : mod}
               </div>
@@ -213,8 +223,15 @@ export default function StatsStep({ char, update, isMobile: isMobileProp, haptic
 
       {/* Roll for me button */}
       <div style={{ display: "flex", justifyContent: "center" }}>
-        <Ripple onClick={rollStats} style={{ ...styles.secondaryBtn, gap: 6 }}>
-          <Icon name="casino" size={18} /> Roll for me
+        <Ripple onClick={handleRoll} style={{ ...styles.secondaryBtn, gap: 6 }}>
+          <span
+            key={rollSpinKey}
+            className={rollSpinKey > 0 ? "cc-dice-spin" : undefined}
+            style={{ display: "inline-flex", alignItems: "center" }}
+          >
+            <Icon name="casino" size={18} />
+          </span>{" "}
+          Roll for me
         </Ripple>
       </div>
     </div>

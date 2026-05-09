@@ -139,7 +139,7 @@ export function SRDRulesContent({ sectionId, Icon, Ripple, renderMarkdown, onPin
   const pinId: string = `srd-rule-${currentSection.id}`;
 
   return (
-    <div style={{ maxWidth: 700, margin: "0 auto", padding: "32px 48px", animation: "m3pop 0.25s ease" }}>
+    <div style={{ maxWidth: 700, margin: "0 auto", padding: "32px 48px", animation: "m3pop 250ms var(--ease-out-strong)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
         <span style={{
           fontSize: 11, fontWeight: 500, textTransform: "uppercase", letterSpacing: 0.8,

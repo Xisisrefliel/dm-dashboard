@@ -87,12 +87,14 @@ export const styles: { [key: string]: CSSProperties & Record<`--${string}`, stri
     fontWeight: 600,
     letterSpacing: "-0.02em",
     margin: "0 0 8px",
+    textWrap: "balance",
   },
   stepDesc: {
     fontSize: 14,
     color: "var(--dm-text-secondary)",
     margin: "0 0 24px",
     lineHeight: 1.5,
+    textWrap: "pretty",
   },
   cardGrid: {
     display: "grid",

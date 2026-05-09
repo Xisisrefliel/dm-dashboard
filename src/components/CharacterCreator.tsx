@@ -293,10 +293,17 @@ function CharacterCreator({
     }
   }, [step, isMobile]);
 
-  // Track step direction
+  // Track step direction. `mounted` stays false on the very first render so we
+  // don't slide-in when entering edit mode at step 6 (or restoring saved step).
   const prevStepRef = useRef<number>(step);
   const [stepDir, setStepDir] = useState<number>(0);
+  const [mounted, setMounted] = useState<boolean>(false);
   useEffect(() => {
+    if (!mounted) {
+      setMounted(true);
+      prevStepRef.current = step;
+      return;
+    }
     setStepDir(
       step > prevStepRef.current ? 1 : step < prevStepRef.current ? -1 : 0,
     );
@@ -565,7 +572,7 @@ function CharacterCreator({
               objectFit: "cover",
               objectPosition: "center",
               filter: "saturate(0.6) brightness(0.45)",
-              animation: "m3stepIn 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+              animation: "m3stepIn 320ms var(--ease-out-strong), ccAmbientZoom 1200ms var(--ease-out-strong)",
             }}
           />
           <div
@@ -653,6 +660,7 @@ function CharacterCreator({
                         justifyContent: "center",
                         fontSize: 12,
                         fontWeight: 600,
+                        position: "relative",
                         background: done
                           ? "var(--dm-primary)"
                           : active
@@ -667,15 +675,20 @@ function CharacterCreator({
                             : showValidation && !done
                               ? "var(--dm-error, #ffb4ab)"
                               : "var(--dm-text-muted)",
+                        transition: "background-color 200ms var(--ease-out-strong), color 200ms var(--ease-out-strong)",
                       }}
                     >
-                      {done ? (
-                        <Icon name="check" size={14} />
-                      ) : showValidation && !done ? (
-                        <Icon name="priority_high" size={14} />
-                      ) : (
-                        i + 1
-                      )}
+                      <span className="cc-step-icon">
+                        <span data-active={done}>
+                          <Icon name="check" size={14} />
+                        </span>
+                        <span data-active={!done && showValidation}>
+                          <Icon name="priority_high" size={14} />
+                        </span>
+                        <span data-active={!done && !(showValidation)}>
+                          {i + 1}
+                        </span>
+                      </span>
                     </span>
                     {s}
                   </Ripple>
@@ -763,6 +776,7 @@ function CharacterCreator({
                     justifyContent: "center",
                     fontSize: 12,
                     fontWeight: 600,
+                    position: "relative",
                     background: done
                       ? "var(--dm-primary)"
                       : active
@@ -777,15 +791,20 @@ function CharacterCreator({
                         : showValidation && !done
                           ? "var(--dm-error, #ffb4ab)"
                           : "var(--dm-text-muted)",
+                    transition: "background-color 200ms var(--ease-out-strong), color 200ms var(--ease-out-strong)",
                   }}
                 >
-                  {done ? (
-                    <Icon name="check" size={14} />
-                  ) : showValidation && !done ? (
-                    <Icon name="priority_high" size={14} />
-                  ) : (
-                    i + 1
-                  )}
+                  <span className="cc-step-icon">
+                    <span data-active={done}>
+                      <Icon name="check" size={14} />
+                    </span>
+                    <span data-active={!done && showValidation}>
+                      <Icon name="priority_high" size={14} />
+                    </span>
+                    <span data-active={!done && !(showValidation)}>
+                      {i + 1}
+                    </span>
+                  </span>
                 </span>
               </Ripple>
             );
@@ -808,7 +827,9 @@ function CharacterCreator({
           <div
             key={step}
             style={{
-              animation: `${stepDir >= 0 ? "stepSlideLeft" : "stepSlideRight"} 0.35s cubic-bezier(0.25, 0.1, 0.25, 1)`,
+              animation: mounted
+                ? `${stepDir >= 0 ? "stepSlideLeft" : "stepSlideRight"} 280ms var(--ease-out-strong)`
+                : undefined,
             }}
           >
             {renderStep()}
@@ -883,7 +904,7 @@ function CharacterCreator({
                     fontSize: 13,
                     fontWeight: 500,
                     marginTop: 8,
-                    animation: "m3stepIn 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                    animation: "m3stepIn 200ms var(--ease-out-strong)",
                   }}
                 >
                   <Icon name="error" size={18} />
@@ -993,6 +1014,7 @@ function CharacterCreator({
                             fontSize: 16,
                             fontWeight: 700,
                             color: "var(--dm-primary)",
+                            fontVariantNumeric: "tabular-nums",
                           }}
                         >
                           {total}
@@ -1068,8 +1090,10 @@ function CharacterCreator({
               gap: 8,
               padding: "12px 16px",
               paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))",
-              background: "var(--dm-bg)",
-              borderTop: "1px solid var(--dm-outline-variant)",
+              background: "rgba(28, 28, 31, 0.75)",
+              backdropFilter: "blur(16px)",
+              WebkitBackdropFilter: "blur(16px)",
+              borderTop: "1px solid rgba(255,255,255,0.06)",
             }}
           >
             {step > 0 ? (
@@ -1145,7 +1169,7 @@ function CharacterCreator({
                 color: "var(--dm-error, #ffb4ab)",
                 fontSize: 13,
                 fontWeight: 500,
-                animation: "m3stepIn 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                animation: "m3stepIn 200ms var(--ease-out-strong)",
                 boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
               }}
             >

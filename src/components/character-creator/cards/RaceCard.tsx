@@ -23,24 +23,31 @@ export default function RaceCard({ race, selected, onSelect }: Props) {
         display: "flex",
         flexDirection: "column",
         position: "relative",
-        transition: "border-color 0.2s",
-        border: selected
-          ? "2px solid var(--dm-primary)"
-          : "1px solid var(--dm-outline-variant)",
+        border: "1px solid var(--dm-outline-variant)",
+        outline: selected ? "2px solid var(--dm-primary)" : "2px solid transparent",
+        outlineOffset: -2,
+        transition: "outline-color 200ms var(--ease-out-strong), border-color 200ms var(--ease-out-strong)",
       }}
     >
       <div>
         {img ? (
-          <div style={{ width: "100%", aspectRatio: "1", overflow: "hidden" }}>
+          <div
+            className="cc-card-img-wrap"
+            style={{ width: "100%", aspectRatio: "1", overflow: "hidden", position: "relative" }}
+          >
             <img
               src={img}
               alt={race.name}
               loading="lazy"
+              className="cc-card-img"
               style={{
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
                 display: "block",
+                outline: "1px solid rgba(255,255,255,0.1)",
+                outlineOffset: -1,
+                transition: "transform 380ms var(--ease-out-strong)",
               }}
             />
           </div>
@@ -74,8 +81,8 @@ export default function RaceCard({ race, selected, onSelect }: Props) {
           background: "var(--dm-surface)",
         }}
       >
-        <div style={{ fontSize: 16, fontWeight: 600 }}>{race.name}</div>
-        <div style={{ fontSize: 13, color: "var(--dm-text-secondary)" }}>
+        <div style={{ fontSize: 16, fontWeight: 600, textWrap: "balance" }}>{race.name}</div>
+        <div style={{ fontSize: 13, color: "var(--dm-text-secondary)", fontVariantNumeric: "tabular-nums" }}>
           {race.abilityBonuses
             .map((b) => `${b.ability} +${b.bonus}`)
             .join(", ")}
@@ -84,6 +91,7 @@ export default function RaceCard({ race, selected, onSelect }: Props) {
           style={{
             fontSize: 13,
             color: "var(--dm-text-secondary)",
+            fontVariantNumeric: "tabular-nums",
           }}
         >
           Speed {race.speed} ft · {race.size}

@@ -7,6 +7,7 @@ import { docRoutes } from "./api/docs";
 import { categoryRoutes } from "./api/categories";
 import { partyRoutes } from "./api/party";
 import { generateImageRoutes } from "./api/generate-image";
+import { dmChatRoutes } from "./api/dm-chat";
 
 // Run migrations on startup
 await migrate();
@@ -44,6 +45,7 @@ const server = serve({
     ...categoryRoutes,
     ...partyRoutes,
     ...generateImageRoutes,
+    ...dmChatRoutes,
 
     // SPA fallback — must be last
     "/*": index,

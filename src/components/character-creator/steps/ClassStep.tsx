@@ -72,12 +72,12 @@ export default function ClassStep({ char, update, next, prev, haptic, previewCla
         <div key={previewClass!} style={{
           position: "relative", borderRadius: 20, overflow: "hidden",
           border: "1px solid rgba(255,255,255,0.08)", marginBottom: 24,
-          animation: `${closing ? "detailCardOut" : "detailCardIn"} ${closing ? "0.25s" : "0.35s"} cubic-bezier(0.25, 0.1, 0.25, 1) forwards`,
+          animation: `${closing ? "detailCardOut" : "detailCardIn"} ${closing ? "0.25s" : "0.35s"} var(--ease-out-strong) forwards`,
         }}>
           <div style={{ position: "absolute", inset: 0, background: "rgba(28, 28, 31, 0.7)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }} />
           <div style={{
             position: "relative", display: "flex", gap: 0,
-            animation: `${closing ? "detailContentOut" : "detailContentIn"} ${closing ? "0.25s" : "0.35s"} cubic-bezier(0.25, 0.1, 0.25, 1) forwards`,
+            animation: `${closing ? "detailContentOut" : "detailContentIn"} ${closing ? "0.25s" : "0.35s"} var(--ease-out-strong) forwards`,
             ...(isMobile ? { flexDirection: "column" } : { flexWrap: "wrap" }),
           }}>
           {/* Image */}
@@ -86,7 +86,7 @@ export default function ClassStep({ char, update, next, prev, haptic, previewCla
               ? { width: "100%", height: 200, flexShrink: 0 }
               : { width: 280, minWidth: 280, flexShrink: 0 }
             }>
-              <img src={pImg} alt={pCls.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+              <img src={pImg} alt={pCls.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", outline: "1px solid rgba(255,255,255,0.1)", outlineOffset: -1 }} />
             </div>
           )}
 
@@ -95,10 +95,10 @@ export default function ClassStep({ char, update, next, prev, haptic, previewCla
             ? { flex: 1, padding: 16 }
             : { flex: 1, padding: "28px 32px", minWidth: 260 }
           }>
-            <h3 style={{ fontSize: 28, fontWeight: 700, margin: "0 0 12px", letterSpacing: "0.02em", textTransform: "uppercase" }}>
+            <h3 style={{ fontSize: 28, fontWeight: 700, margin: "0 0 12px", letterSpacing: "0.02em", textTransform: "uppercase", textWrap: "balance" }}>
               {pCls.name}
             </h3>
-            <p style={{ fontSize: 15, color: "var(--dm-text-secondary)", lineHeight: 1.6, margin: "0 0 20px" }}>
+            <p style={{ fontSize: 15, color: "var(--dm-text-secondary)", lineHeight: 1.6, margin: "0 0 20px", textWrap: "pretty" }}>
               {CLASS_DESCRIPTIONS[pCls.id]}
             </p>
 
@@ -204,9 +204,12 @@ export default function ClassStep({ char, update, next, prev, haptic, previewCla
                   onClick={() => openPreview(cls.id)}
                   style={{
                     flexShrink: 0, width: 100, borderRadius: 12, overflow: "hidden",
-                    border: active ? "2px solid var(--dm-primary)" : "1px solid var(--dm-outline-variant)",
+                    border: "1px solid var(--dm-outline-variant)",
+                    outline: active ? "2px solid var(--dm-primary)" : "2px solid transparent",
+                    outlineOffset: -2,
                     background: "var(--dm-surface)", display: "flex", flexDirection: "column",
-                    opacity: active ? 1 : 0.7, transition: "opacity 150ms ease, border-color 150ms ease",
+                    opacity: active ? 1 : 0.7,
+                    transition: "opacity 180ms var(--ease-out-strong), outline-color 180ms var(--ease-out-strong)",
                     scrollSnapAlign: "start",
                   }}
                 >

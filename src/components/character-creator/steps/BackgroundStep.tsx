@@ -48,13 +48,13 @@ export default function BackgroundStep({ char, update, next, prev, haptic, previ
         <div key={previewBg!} style={{
           position: "relative", borderRadius: 20, overflow: "hidden",
           border: "1px solid rgba(255,255,255,0.08)", marginBottom: 24,
-          animation: `${closing ? "detailCardOut" : "detailCardIn"} ${closing ? "0.25s" : "0.35s"} cubic-bezier(0.25, 0.1, 0.25, 1) forwards`,
+          animation: `${closing ? "detailCardOut" : "detailCardIn"} ${closing ? "0.25s" : "0.35s"} var(--ease-out-strong) forwards`,
           ...(isMobile ? {} : { height: 360 }),
         }}>
           <div style={{ position: "absolute", inset: 0, background: "rgba(28, 28, 31, 0.7)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }} />
           <div style={{
             position: "relative", display: "flex", gap: 0, height: "100%",
-            animation: `${closing ? "detailContentOut" : "detailContentIn"} ${closing ? "0.25s" : "0.35s"} cubic-bezier(0.25, 0.1, 0.25, 1) forwards`,
+            animation: `${closing ? "detailContentOut" : "detailContentIn"} ${closing ? "0.25s" : "0.35s"} var(--ease-out-strong) forwards`,
             ...(isMobile ? { flexDirection: "column" } : {}),
           }}>
           {pBgImg && (

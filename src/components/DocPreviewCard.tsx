@@ -76,7 +76,8 @@ function DocPreviewCard({ doc, x, y, onHover, onLeave }: DocPreviewCardProps): R
         maxWidth: 320,
         border: "1px solid var(--dm-outline-variant)",
         boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-        animation: "m3pop 0.12s ease",
+        transformOrigin: "top left",
+        animation: "m3pop 120ms var(--ease-out-strong)",
       }}
     >
       <div

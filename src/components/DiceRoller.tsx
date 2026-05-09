@@ -89,7 +89,7 @@ function DiceRoller(): React.ReactElement {
                     ? "var(--dm-tertiary)"
                     : "var(--dm-text)",
               fontFamily: "'Inter', sans-serif",
-              animation: isCrit ? "critGlow 1.5s ease infinite" : "none",
+              animation: isCrit ? "critGlow 1.5s ease 2" : "none",
             }}
           >
             {result.val}

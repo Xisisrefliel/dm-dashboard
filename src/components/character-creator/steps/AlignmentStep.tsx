@@ -45,7 +45,11 @@ export default function AlignmentStep({ char, update, next, isMobile: isMobilePr
           <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 20, lineHeight: 1.5 }}>
             {currentQ.q}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div
+            key={quizAnswers.length}
+            className="cc-stagger"
+            style={{ display: "flex", flexDirection: "column", gap: 8 }}
+          >
             {currentQ.answers.map((ans, i) => (
               <Ripple
                 key={i}
@@ -56,6 +60,7 @@ export default function AlignmentStep({ char, update, next, isMobile: isMobilePr
                   border: "1px solid var(--dm-outline-variant)",
                   fontSize: 14, lineHeight: 1.5, textAlign: "left",
                   color: "var(--dm-text)",
+                  textWrap: "pretty",
                 }}
               >
                 {ans.text}
@@ -119,12 +124,15 @@ export default function AlignmentStep({ char, update, next, isMobile: isMobilePr
               borderRadius: 16,
               padding: isMobile ? 12 : 16,
               textAlign: "center",
-              border:
+              border: "1px solid rgba(255,255,255,0.08)",
+              outline:
                 char.alignment === al.id
                   ? `2px solid ${al.color}`
                   : suggestedAlignment === al.id
                     ? `2px solid ${al.color}80`
-                    : "1px solid rgba(255,255,255,0.08)",
+                    : "2px solid transparent",
+              outlineOffset: -2,
+              transition: "outline-color 200ms var(--ease-out-strong), background-color 200ms var(--ease-out-strong)",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",

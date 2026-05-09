@@ -24,6 +24,7 @@ import InitTracker from "./InitTracker.tsx";
 import DocPreviewCard from "./DocPreviewCard.tsx";
 import PinnedPanel from "./PinnedPanel.tsx";
 import PartyPanel from "./PartyPanel.tsx";
+import DMChatPanel from "./DMChatPanel.tsx";
 import type { Campaign, Doc, Category } from "../types/index.ts";
 
 interface DMDashboardCampaign extends Campaign {
@@ -64,6 +65,47 @@ interface DMDashboardProps {
   onBack: () => void;
 }
 
+interface NpcStats {
+  hp: number | null;
+  ac: number | null;
+  speed: string | null;
+  str: number | null;
+  dex: number | null;
+  con: number | null;
+  int: number | null;
+  wis: number | null;
+  cha: number | null;
+}
+
+function parseNpcStats(content: string): NpcStats {
+  const stats: NpcStats = { hp: null, ac: null, speed: null, str: null, dex: null, con: null, int: null, wis: null, cha: null };
+  if (!content) return stats;
+  const lines = content.split("\n");
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const boldMatch = trimmed.replace(/\*\*/g, "");
+    const hpMatch = boldMatch.match(/^HP[:\s]+(\d+)/i) || boldMatch.match(/^Hit Points[:\s]+(\d+)/i) || boldMatch.match(/^Hit Points[:\s]+\((\d+)/i);
+    if (hpMatch && !stats.hp) { stats.hp = parseInt(hpMatch[1]); continue; }
+    const acMatch = boldMatch.match(/^AC[:\s]+(\d+)/i) || boldMatch.match(/^Armor Class[:\s]+(\d+)/i);
+    if (acMatch && !stats.ac) { stats.ac = parseInt(acMatch[1]); continue; }
+    const speedMatch = boldMatch.match(/^Speed[:\s]+(.+)/i);
+    if (speedMatch && !stats.speed) { stats.speed = speedMatch[1].trim(); continue; }
+    const statLineMatch = boldMatch.match(/^(?:STR|Strength)[:\s]+(\d+)/i);
+    if (statLineMatch && !stats.str) { stats.str = parseInt(statLineMatch[1]); }
+    const dexMatch = boldMatch.match(/(?:^|[\s|])(?:DEX|Dexterity)[:\s]+(\d+)/i);
+    if (dexMatch && !stats.dex) { stats.dex = parseInt(dexMatch[1]); }
+    const conMatch = boldMatch.match(/(?:^|[\s|])(?:CON|Constitution)[:\s]+(\d+)/i);
+    if (conMatch && !stats.con) { stats.con = parseInt(conMatch[1]); }
+    const intMatch = boldMatch.match(/(?:^|[\s|])(?:INT|Intelligence)[:\s]+(\d+)/i);
+    if (intMatch && !stats.int) { stats.int = parseInt(intMatch[1]); }
+    const wisMatch = boldMatch.match(/(?:^|[\s|])(?:WIS|Wisdom)[:\s]+(\d+)/i);
+    if (wisMatch && !stats.wis) { stats.wis = parseInt(wisMatch[1]); }
+    const chaMatch = boldMatch.match(/(?:^|[\s|])(?:CHA|Charisma)[:\s]+(\d+)/i);
+    if (chaMatch && !stats.cha) { stats.cha = parseInt(chaMatch[1]); }
+  }
+  return stats;
+}
+
 function DMDashboard({ campaign, onBack }: DMDashboardProps) {
   const isOwner = campaign.role !== "member";
   const palette = useMemo(() => derivePalette(campaign.color || "#9fd494"), [campaign.color]);
@@ -79,10 +121,12 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
   const [pinned, setPinned] = useState<Doc[]>([]);
   const [search, setSearch] = useState<string>("");
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
-  const [rightTab, setRightTab] = useState<string>("dice");
+  const [rightTab, setRightTab] = useState<string>(() => localStorage.getItem(`dm-right-tab:${campaign.id}`) || "dice");
   const [initPrefill, setInitPrefill] = useState<InitPrefill | null>(null);
   const [drawerOpen, setDrawerOpen] = useState<boolean>(true);
-  const [rightOpen, setRightOpen] = useState<boolean>(true);
+  const [rightOpen, setRightOpen] = useState<boolean>(() => localStorage.getItem(`dm-right-open:${campaign.id}`) !== "false");
+  const [rightWidth, setRightWidth] = useState<number>(() => Number(localStorage.getItem(`dm-right-width:${campaign.id}`)) || 340);
+  const [resizingRight, setResizingRight] = useState<boolean>(false);
   const [pasteMode, setPasteMode] = useState<boolean>(false);
   const [pasteParentId, setPasteParentId] = useState<string | null>(null);
   const [pasteTitle, setPasteTitle] = useState<string>("");
@@ -236,6 +280,37 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
       renameCatRef.current.select();
     }
   }, [renamingCat]);
+
+  useEffect(() => {
+    localStorage.setItem(`dm-right-tab:${campaign.id}`, rightTab);
+  }, [campaign.id, rightTab]);
+
+  useEffect(() => {
+    localStorage.setItem(`dm-right-open:${campaign.id}`, String(rightOpen));
+  }, [campaign.id, rightOpen]);
+
+  useEffect(() => {
+    localStorage.setItem(`dm-right-width:${campaign.id}`, String(rightWidth));
+  }, [campaign.id, rightWidth]);
+
+  useEffect(() => {
+    if (!resizingRight) return;
+    const onMove = (e: MouseEvent) => {
+      const next = Math.max(280, Math.min(620, window.innerWidth - e.clientX));
+      setRightWidth(next);
+    };
+    const onUp = () => setResizingRight(false);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [resizingRight]);
 
   const startRenameCat = (c: Category) => {
     setRenamingCat(c.key);
@@ -464,22 +539,9 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-        @keyframes m3ripple { to { transform: scale(1); opacity: 0; } }
-        @keyframes m3pop { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        @keyframes m3slideIn { from { transform: translateX(-16px); opacity: 0; } to { transform: none; opacity: 1; } }
         @keyframes critGlow {
           0%, 100% { text-shadow: 0 0 12px rgba(${rgbLight[0]}, ${rgbLight[1]}, ${rgbLight[2]}, 0.3); }
           50% { text-shadow: 0 0 28px rgba(${rgbLight[0]}, ${rgbLight[1]}, ${rgbLight[2]}, 0.6), 0 0 60px rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.3); }
-        }
-        @keyframes fumbleShake {
-          0%, 100% { transform: translateX(0); }
-          15% { transform: translateX(-6px) rotate(-2deg); }
-          30% { transform: translateX(6px) rotate(2deg); }
-          45% { transform: translateX(-4px) rotate(-1deg); }
-          60% { transform: translateX(4px) rotate(1deg); }
-          75% { transform: translateX(-2px); }
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -493,6 +555,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
         .m3h6 { font-size: 12px; font-weight: 600; color: var(--dm-text-muted); margin: 10px 0 4px; line-height: 1.3; text-transform: uppercase; letter-spacing: 0.04em; }
         .m3body { font-size: 14px; line-height: 1.7; color: var(--dm-text-secondary); margin: 4px 0; }
         .m3code { background: var(--dm-surface-bright); padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', 'Cascadia Code', monospace; color: var(--dm-primary); }
+        .m3pre { background: var(--dm-surface-bright); border: 1px solid var(--dm-outline-variant); border-radius: 12px; padding: 12px; margin: 10px 0; overflow: auto; color: var(--dm-text); font-size: 12px; line-height: 1.55; font-family: 'SF Mono', 'Cascadia Code', monospace; }
         .m3link { color: var(--dm-primary); cursor: pointer; font-weight: 500; text-decoration: underline; text-decoration-color: rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.3); text-underline-offset: 2px; transition: text-decoration-color 150ms ease; }
         .m3hr { border: none; border-top: 1px solid var(--dm-outline-variant); margin: 16px 0; }
         .m3bq { border-left: 3px solid var(--dm-primary); padding: 10px 16px; margin: 12px 0; background: var(--dm-primary-container); border-radius: 0 12px 12px 0; font-style: italic; color: var(--dm-text-secondary); font-size: 14px; line-height: 1.6; }
@@ -1605,14 +1668,28 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
           {rightOpen && (
             <div
               style={{
-                width: 300,
-                minWidth: 300,
+                width: rightWidth,
+                minWidth: rightWidth,
+                position: "relative",
                 background: "var(--dm-bg)",
                 display: "flex",
                 flexDirection: "column",
                 animation: "m3pop 200ms var(--ease-out-strong)",
               }}
             >
+              <div
+                onMouseDown={() => setResizingRight(true)}
+                title="Drag to resize"
+                style={{
+                  position: "absolute",
+                  left: -4,
+                  top: 0,
+                  bottom: 0,
+                  width: 8,
+                  cursor: "col-resize",
+                  zIndex: 5,
+                }}
+              />
               <div
                 style={{
                   display: "flex",
@@ -1625,6 +1702,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
                   { key: "pinned", label: "Pinned", icon: "push_pin" },
                   { key: "dice", label: "Dice", icon: "casino" },
                   { key: "init", label: "Initiative", icon: "swords" },
+                  { key: "chat", label: "Chat", icon: "forum" },
                 ].map((tab) => (
                   <Ripple
                     key={tab.key}
@@ -1685,6 +1763,9 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
                     onPrefillConsumed={() => setInitPrefill(null)}
                   />
                 )}
+                {rightTab === "chat" && (
+                  <DMChatPanel campaignId={campaign.id} docs={docs} onSelectDoc={selectDoc as any} />
+                )}
               </div>
             </div>
           )}
@@ -1697,7 +1778,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
             style={{
               position: "fixed",
               bottom: 24,
-              right: rightOpen ? 324 : 24,
+              right: rightOpen ? rightWidth + 24 : 24,
               width: 56,
               height: 56,
               borderRadius: 16,
