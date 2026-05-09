@@ -6,7 +6,7 @@
 
 ## Overview
 
-An adult dragon bound by a 200-year-old magical contract. It's not evil in the traditional sense — it made a deal and expects payment. It's been coming to Ashen for generations. Every time, the village gives it a child. This time, the child is hidden. The dragon came anyway.
+An adult dragon bound by a 200-year-old magical contract. It's not evil in the traditional sense — it made a deal and expects payment. It's been coming to Ashen for generations. Every time, the village gives it a child. This time, the child is hidden. The pact's curse activated — the day repeats until delivery is made. The dragon comes every evening because that's what the contract stipulates.
 
 ---
 
@@ -38,7 +38,7 @@ Use an Adult Red Dragon stat block (or equivalent for your system of choice) wit
 | 1 | The dragon exists. It's enormous. It's real. | It destroys the village at 18:00. |
 | 2 | It comes from the east at sunset. Reliable pattern. | Can position to observe. |
 | 3 | It drinks at the mill at midday. It sleeps at the ridge. It circles at 14:30. The watchtower has a dead ranger's journal describing its weak spot. | Go east, visit the mill, climb the watchtower. |
-| 4 | It speaks. It's enforcing a contract. It said "the pact is broken, the tribute is withheld." It's not mindless. | Survive long enough to hear it speak (18:05). Or get close enough to the ridge to be addressed. |
+| 4 | It speaks. It's enforcing a contract. It said "the pact is broken, the tribute is withheld." The pact has a failsafe — when tribute is withheld, the day repeats. | Survive long enough to hear it speak (18:05). Or get close enough to the ridge to be addressed. |
 | 5+ | It can be negotiated with. It made a deal. It might accept different terms. | Approach it at the ridge (daytime, not hostile). Or bring Lise to the square before sunset. |
 
 ---
@@ -48,7 +48,7 @@ Use an Adult Red Dragon stat block (or equivalent for your system of choice) wit
 - The exact terms of the 200-year-old pact.
 - That Ilsa is withholding the tribute.
 - That the village continues to send children. It considers this acceptable payment.
-- It has no malice toward the village. It considers this a business arrangement. The pact doesn't require it to feel good about this.
+- That the day has been repeating. It doesn't experience the loops — it arrives fresh each sunset, destroys the village, and the pact's curse resets the day. It has no idea it's done this 63 times.
 
 ---
 

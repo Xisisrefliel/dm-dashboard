@@ -77,6 +77,20 @@ interface NpcStats {
   cha: number | null;
 }
 
+type DocLanguage = "de" | "en";
+
+function getLocalizedDocContent(content: string, language: DocLanguage): string {
+  const deMatch = content.match(/<!--\s*lang:de\s*-->([\s\S]*?)(?=<!--\s*lang:en\s*-->|$)/i);
+  const enMatch = content.match(/<!--\s*lang:en\s*-->([\s\S]*)$/i);
+
+  if (language === "de") return (deMatch?.[1] || content).trim();
+  return (enMatch?.[1] || deMatch?.[1] || content).trim();
+}
+
+function hasEnglishDocContent(content: string): boolean {
+  return /<!--\s*lang:en\s*-->/i.test(content);
+}
+
 function parseNpcStats(content: string): NpcStats {
   const stats: NpcStats = { hp: null, ac: null, speed: null, str: null, dex: null, con: null, int: null, wis: null, cha: null };
   if (!content) return stats;
@@ -113,8 +127,12 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
   const rgbLight = useMemo(() => hexToRGB(palette.primaryLight), [palette.primaryLight]);
 
   const [docs, setDocs] = useState<Doc[]>(campaign.docs);
-  const [cat, setCat] = useState<string>("locations");
+  const [cat, setCat] = useState<string | null>(null);
   const [doc, setDoc] = useState<Doc | null>(campaign.docs[0] || null);
+  const [docLanguage, setDocLanguage] = useState<DocLanguage>(() => {
+    const saved = localStorage.getItem(`dm-doc-language:${campaign.id}`);
+    return saved === "en" || saved === "de" ? saved : "de";
+  });
   const [openTabs, setOpenTabs] = useState<string[]>(
     campaign.docs[0] ? [campaign.docs[0].id] : [],
   );
@@ -142,7 +160,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [selectedRace, setSelectedRace] = useState<string | null>(null);
 
-  const isSRD = cat.startsWith("srd-");
+  const isSRD = cat?.startsWith("srd-") ?? false;
 
   // Context menu
   const [ctxMenu, setCtxMenu] = useState<CtxMenuState | null>(null);
@@ -167,6 +185,10 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
   const hoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Helper to persist categories to API
+  useEffect(() => {
+    localStorage.setItem(`dm-doc-language:${campaign.id}`, docLanguage);
+  }, [campaign.id, docLanguage]);
+
   const saveCategories = (cats: Category[]) => {
     fetch(`/api/campaigns/${campaign.id}/categories`, {
       method: "PUT",
@@ -176,7 +198,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
   };
 
   const catItems = useMemo(
-    () => docs.filter((d) => d.category === cat),
+    () => cat ? docs.filter((d) => d.category === cat) : docs,
     [docs, cat],
   );
   const openTabDocs = useMemo(
@@ -186,11 +208,10 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return [];
-    const campaignResults = docs.filter(
-      (d) =>
-        d.title.toLowerCase().includes(q) ||
-        d.content.toLowerCase().includes(q),
-    );
+    const campaignResults = docs.filter((d) => {
+      const localized = getLocalizedDocContent(d.content, docLanguage).toLowerCase();
+      return d.title.toLowerCase().includes(q) || localized.includes(q);
+    });
     const spellResults = spellsData
       .filter((s) => s.name.toLowerCase().includes(q))
       .slice(0, 8)
@@ -247,7 +268,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
         srdId: s.id,
       }));
     return [...campaignResults, ...rulesResults, ...spellResults, ...monsterResults, ...classResults, ...raceResults];
-  }, [docs, search]);
+  }, [docs, search, docLanguage]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -895,7 +916,7 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
                           });
                         } : undefined}
                       >
-                        <Chip
+<Chip
                           label={c.label}
                           icon={c.icon}
                           selected={
@@ -903,11 +924,13 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
                           }
                           onClick={() => {
                             if (c.key === "rules" && (cat === "rules" || isSRD)) {
-                              // Toggle: collapse back to the previous non-SRD category or just stay
-                              setCat(isSRD ? "rules" : "locations");
+                              setCat(cat === "rules" ? null : "rules");
+                            } else if (cat === c.key) {
+                              setCat(null);
                             } else {
                               setCat(c.key);
                             }
+                            setDoc(null);
                             setPasteMode(false);
                           }}
                         />
@@ -925,7 +948,11 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
                           icon={c.icon}
                           selected={cat === c.key}
                           onClick={() => {
-                            setCat(c.key);
+                            if (cat === c.key) {
+                              setCat(null);
+                            } else {
+                              setCat(c.key);
+                            }
                             setDoc(null);
                             setPasteMode(false);
                           }}
@@ -1096,6 +1123,30 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
                         );
                       };
                       // Render top-level items (no parentId)
+                      if (!cat) {
+                        const grouped = categories
+                          .filter((c) => !c.key.startsWith("srd-"))
+                          .map((c) => ({
+                            ...c,
+                            items: catItems.filter((d) => d.category === c.key && !d.parentId),
+                          }))
+                          .filter((g) => g.items.length > 0);
+                        return grouped.map((g) => (
+                          <div key={g.key}>
+                            <div style={{
+                              fontSize: 11,
+                              fontWeight: 600,
+                              color: "var(--dm-text-muted)",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em",
+                              padding: "12px 16px 4px",
+                            }}>
+                              {g.label}
+                            </div>
+                            {g.items.map((item) => renderItem(item, 0))}
+                          </div>
+                        ));
+                      }
                       return catItems
                         .filter((d) => !d.parentId)
                         .map((item) => renderItem(item, 0));
@@ -1466,7 +1517,43 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
                         {categories.find((c) => c.key === doc.category)?.label}
                       </span>
                     </div>
-                    <div style={{ display: "flex", gap: 4 }}>
+                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 2,
+                          padding: 3,
+                          borderRadius: 999,
+                          background: "var(--dm-surface-container)",
+                          border: "1px solid var(--dm-outline-variant)",
+                        }}
+                        title="Dokumentationssprache / Documentation language"
+                      >
+                        {(["de", "en"] as DocLanguage[]).map((language) => (
+                          <Ripple
+                            key={language}
+                            onClick={() => setDocLanguage(language)}
+                            style={{
+                              minWidth: 34,
+                              height: 30,
+                              padding: "0 10px",
+                              borderRadius: 999,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: 12,
+                              fontWeight: 700,
+                              letterSpacing: 0.4,
+                              textTransform: "uppercase",
+                              background: docLanguage === language ? "var(--dm-primary)" : "transparent",
+                              color: docLanguage === language ? "var(--dm-on-primary)" : "var(--dm-text-secondary)",
+                            }}
+                          >
+                            {language}
+                          </Ripple>
+                        ))}
+                      </div>
                       {isOwner && (
                       <Ripple
                         onClick={editing ? saveEdit : startEdit}
@@ -1617,7 +1704,10 @@ function DMDashboard({ campaign, onBack }: DMDashboardProps) {
                       }}
                       dangerouslySetInnerHTML={{
                         __html: renderMarkdown(
-                          doc.content,
+                          getLocalizedDocContent(doc.content, docLanguage) +
+                            (docLanguage === "en" && !hasEnglishDocContent(doc.content)
+                              ? "\n\n> [!NOTE] English translation has not been added for this document yet. Showing the German source."
+                              : ""),
                           docs
                             .filter((d) => d.id !== doc.id)
                             .map((d) => d.title),

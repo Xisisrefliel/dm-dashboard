@@ -30,25 +30,25 @@
 ### Loop 4 — Reveal
 - They know Ilsa is hiding something. They know the village sends children east. Time to dig.
 - **Step 1:** Break into the mayor's office while he's in closed council (14:00-15:00). DC 15 to pick the lock, or DC 20 if he's inside. Find the letters mentioning Ilsa, "the arrangement," and "the tribute."
-- **Step 2:** Confront Ilsa with the letters. She breaks: "Yes, Lise is alive. She's here. I hid her." And then: "I've had this conversation before. I've had it so many times." The players now know: Ilsa's grief is causing the loop.
+- **Step 2:** Confront Ilsa with the letters. She breaks: "Yes, Lise is alive. She's here. I hid her." And then: "I've had this conversation before. I've had it so many times." The players now know: something about Ilsa or her situation is connected to the loop, though she doesn't understand it herself — she's just a mother who refused to let go.
 - **Step 3:** Where is Lise? Ilsa won't say. But the players have options:
   - Follow Ilsa at 17:00 — she goes into the church, through a side door, into the cellar. Behind the false wall: Lise.
   - Ask Velda about the church cellar after 16:00 (if they've earned her trust by being compassionate or helpful in previous loops). She mentions "the old cellar, behind the wall in the storage room."
   - Go to the church and listen near the cellar door between 13:00-16:00. A DC 12 Perception check hears a child humming.
-- **Step 4:** Find Lise. She's been there for weeks. She says: "Mama says the dragon comes because I'm hiding. She says if I come out, it stops." This is the crux: the players must decide what to do with this information.
+- **Step 4:** Find Lise. She's been there for weeks. She says: "Mama says the dragon comes because I'm hiding. She says if I come out, it stops." The curse activates when the tribute is withheld — the players must decide whether delivering Lise (fulfilling the pact) or breaking the pact entirely is the right call.
 
 ### Loop 5 — Rally
 - They know the truth. Now they need to act.
 - **Step 1:** Go to Ilsa first thing at dawn. Tell her they know about Lise and the pact. Ask her what she wants to do. She says: "I want to keep my daughter. But I can't ask the village to burn for me."
 - **Step 2:** Go to Dalla at the west gate. Tell her about the pact. She already suspects. She'll say: "I watched them walk a child east 20 years ago. I did nothing. This time I do something."
-- **Step 3:** Go to the priestess. Show her the church records (she already has them) and the mayor's letters. Velda is shaken. She says: "I taught the children that apprenticing was a blessing. I will not teach that lie again."
+- **Step 3:** Go to the priestess. Show her the church records (she already has them) and the mayor's letters. Velda is shaken — she taught children that apprenticing was a blessing. She says: "I taught them it was an honor. I was teaching them to walk to their deaths. I will not teach that lie again."
 - **Step 4:** Go to the blacksmith. Tell him about the tribute. He says: "My master went east. They said he was going to be a smith in the big city. But I inherited his forge because he never came back." He's in.
-- **Step 5:** Confront the mayor. Show him the letters. He panics, tries to flee. Dalla stops him. He confesses everything in front of whoever is gathered.
-- **Step 6:** Ilsa walks to the square at 17:30. She tells the village the truth. Lise is with her — outside for the first time in 6 weeks. The village stands with her.
-- **Step 7:** 18:00. The dragon comes. It circles. It lands. It speaks: "The pact is broken. The tribute is refused." Ilsa steps forward: "We refuse to give you our children. Not this one. Not any of them." The dragon studies her. Studies the village standing behind her. Then: "I will not collect what is not given. But the protection ends." It flies east.
-- **The loop breaks.** The next dawn is real.
+- **Step 5:** Confront the mayor. Show him the letters. He panics, tries to flee. Dalla stops him. He confesses everything in front of whoever is gathered. Crucially: the villagers hear this. They didn't know. The horror isn't just that children died — it's that they all went along with it without knowing.
+- **Step 6:** Ilsa walks to the square at 17:30. She tells the village the truth — not just about Lise, but about all of it. The apprenticeships. The pact. The dragon. Ten children. Ten mothers who let go. She's the first who didn't. Lise is with her — outside for the first time in 6 weeks. The village stands with her.
+- **Step 7:** The village collectively refuses the tribute. This breaks the pact — the mutual refusal voids the contract. The seal in the well cracks.
+- **Step 8:** 18:00. The dragon comes. It circles. It lands. It speaks: "The pact is broken. The tribute is refused." Ilsa steps forward: "We refuse to give you our children. Not this one. Not any of them." The dragon studies her. Studies the village standing behind her. Then: "I will not collect what is not given. But the protection ends." It flies east.
 
-**What if they miss a step?** This route is flexible. If they don't find the mayor's letters, they can still get the truth from Ilsa by confronting her with Snik's observation + Dalla's testimony. If they don't earn Velda's trust, they can find the cellar by following Ilsa. The key milestones are: (1) learn about the pact, (2) find Lise, (3) get Ilsa to face the village, (4) get the village to stand with her.
+**What if they miss a step?** This route is flexible. If they don't find the mayor's letters, they can still get the truth from Ilsa by confronting her with Snik's observation + Dalla's testimony. If they don't earn Velda's trust, they can find the cellar by following Ilsa. The key milestones are: (1) learn about the pact and the curse, (2) find Lise, (3) get Ilsa to face the village, (4) the village collectively refuses the tribute. The curse breaks because the pact is voided by mutual refusal — not because of Ilsa's grief.
 
 ---
 
@@ -94,7 +94,7 @@
 - **Step 2:** 12:00 — the dragon descends to drink. It notices the party. Surprise round if they passed Stealth DC 15.
 - **Step 3:** Combat. Use 06-Combat-Encounter.md for tactics. Call out the weak spot. Focus fire on the gap under its left jaw.
 - **Step 4:** If the dragon drops below 25% HP, it tries to flee. Dalla's guards on the north road prevent it from reaching the ridge. It's cornered. If they finish it, it dies.
-- **Step 5:** The dragon is dead. The loop resets one more time (this is the kill condition — the threat is gone). The next dawn is real.
+- **Step 5:** The dragon is dead. The curse's enforcer is gone. The seal in the well goes cold. The loop resets one more time — but there's no dragon. The next dawn is real.
 
 **What if the fight goes badly?** They die. They loop. They now know the dragon's full combat stats, its spell list, and how it fights. Loop 6 is easier because they've seen everything it can do. The loop is the prep. Let them use it.
 
@@ -136,7 +136,7 @@
   - **A champion's challenge:** "Every 20 years, a champion of Ashen fights you. If they win, the pact is amended. If you win, you take the tribute." The dragon finds this entertaining. It accepts.
   - **The players themselves:** "We will come when you call. We will do services for you. In exchange, no more children." The dragon accepts if the players are genuinely powerful and useful.
   - **Something creative:** The players come up with their own offer. The DM should lean toward accepting creative offers that feel equivalent.
-- **The negotiation:** At the ridge. The dragon and the party hammer out terms. The dragon is formal — it speaks like a lawyer reading a contract. It wants specifics. It won't accept vague promises. The terms are spoken aloud and the pact updates (the seal in the well glows, or the mural in the town hall shifts to reflect the new terms).
+- **The negotiation:** At the ridge. The dragon and the party hammer out terms. The dragon is formal — it speaks like a lawyer reading a contract. It wants specifics. It won't accept vague promises. The terms are spoken aloud and the pact seal in the well glows and shifts — the contract has been amended. The curse updates. The delivery condition is replaced with the new terms. The loop breaks.
 - **The loop breaks.** The next dawn is real.
 
 **What if the party approaches the dragon with weapons drawn?** It attacks. It's not stupid. If they want to negotiate, they must come in peace. If they try to negotiate mid-combat, it only listens if they have the upper hand (below 25% HP) — and then it's more of a surrender than a negotiation.
@@ -175,4 +175,4 @@ This requires the players to be bold (approaching a dragon directly with no comb
 - **Don't force a route.** If they want to fight, let them fight. If they want to talk, let them talk. If they want to do both, let them prep for both.
 - **Information is the reward.** Every loop should give them 2-3 new pieces of information. If a loop feels like it gave nothing, you're blocking them. Make the next NPC more talkative. Make the next clue more obvious.
 - **The loop is the mechanic.** If they die on loop 2, that's fine. They learned something. If they die on loop 5 during the big fight, they come back with full knowledge of the dragon's combat pattern. That's valuable. Never punish failure — failure is information.
-- **Ilsa is the emotional center.** Even if they take Route B (combat), they should discover Ilsa and Lise. Even if they take Route C (negotiation), the dragon should mention that the village has been sending children for 200 years. The emotional truth is the same regardless of the mechanical route.
+- **Ilsa is the emotional center.** Even if they take Route B (combat), they should discover Ilsa and Lise. Even if they take Route C (negotiation), the dragon should mention that the village has been sending children for 200 years. The emotional truth is the same regardless of the mechanical route. The curse is a mechanism — Ilsa refusing to let go of her daughter is what makes it human.

@@ -1,4 +1,4 @@
-# The Loop — The Secret (Ilsa, the Deal, the Daughter)
+# The Loop — The Secret (The Pact, the Curse, the Daughter)
 
 > The emotional core of the one-shot. This is what makes The Loop feel different from a standard investigation.
 
@@ -10,24 +10,26 @@ Ashen was a small village near a war zone. They were going to be destroyed — n
 
 **Terms of the pact:**
 - The dragon would protect Ashen's borders from any military force.
-- In exchange, every generation (20 years), Ashen would send its firstborn child to the dragon as tribute.
+- In exchange, every generation (20 years), Ashen would send a firstborn child to the dragon as tribute.
 - The pact is magical. It's bound in the old seal found in the well (melted metal with the town crest and "PAID IN FULL" in Draconic). As long as the pact is honored, Ashen is safe.
-- If the tribute is withheld, the dragon collects. It always collects.
+- **The pact contains a failsafe curse:** if the tribute is withheld, the day repeats until delivery is made. This has never triggered before — because in 200 years, every tribute was delivered on time.
+
+**The village doesn't know about the pact.** This is critical. They don't know they made a deal with a dragon. They don't know the "apprenticeships" are tribute. They think it's just tradition — children go east to learn a trade. It's what Ashen does. It's what Ashen has always done. The mayor knows. The church records mention "the arrangement" in archaic language. But the villagers? They just know that every twenty years, a child leaves. And nobody asks follow-up questions.
 
 **What happened to the children:**
-The dragon took them. Some were eaten. Some were brought to its lair and lived for years in terrible conditions. None ever returned. The village tells itself they went to "apprenticeships in the east." Nobody asks follow-up questions because the alternative — admitting what they've done — is worse.
+The dragon took them. Some were eaten. Some were brought to its lair and lived for years in terrible conditions. None ever returned. The village tells itself they went to "apprenticeships in the east." Nobody asks because they don't know there's anything to ask about. It's just tradition.
 
 ---
 
 ## Ilsa's Situation
 
-**Her husband, Oren, died 3 years ago.** "Fever," the records say. He was a supporter of the pact. He would have given Lise up when the time came. Ilsa loved him, but she disagrees with him on this. His death freed her to refuse.
+**Her husband, Oren, died 3 years ago.** "Fever," the records say. He would have given Lise up when the time came — he believed in the apprenticeship like everyone else. Ilsa loved him, but she didn't agree. His death freed her to refuse.
 
 **She hid Lise in the church cellar 6 weeks ago.** The "apprenticeship" was due. The mayor came to collect Lise. Ilsa said no. She hid her daughter behind the false wall in the church cellar and told everyone Lise had been sent east early.
 
-**The dragon came on schedule anyway.** It didn't care that a child was "sent." It could feel the pact was unfulfilled. It came to collect.
+**Ilsa is the first mother in 200 years to refuse.** Ten generations. Ten children. Ten mothers who cried and screamed and held on too tight — and then let go. Every single one. Not because they wanted to. Because that's what you do in Ashen. Your child gets apprenticed. You don't ask questions. Ilsa asked questions. Ilsa said no. Ilsa hid her daughter. She's not magical. She's not cursed. She's a mother who wouldn't let go.
 
-**The loop started the morning the dragon arrived.** Ilsa's grief and love, amplified by the magical pact she was breaking, froze the day. She doesn't know she's doing it. She's not a spellcaster. She's a mother who can't let go. The magic of the pact — meant to bind the village — is now binding the day.
+**The curse activated because the tribute was not delivered.** The pact's failsafe kicked in: the day repeats until delivery is made. This has never happened before because every previous tribute walked the eastern road willingly. The curse doesn't care who caused the problem. It doesn't know Ilsa's name. It's a 200-year-old mechanism built into a magical contract, and it will keep re-running the delivery day until the tribute arrives or the contract is broken.
 
 ---
 
@@ -59,11 +61,11 @@ If the players confront Ilsa with evidence (the letters, Dalla's testimony, Snik
 
 > "Yes. Lise is alive. She's here. I hid her because I will NOT give my daughter to that thing. Every twenty years, this village feeds a child to a dragon and calls it apprenticeship. I am the first mother to say no. And now the dragon comes anyway, and everyone will die, and they'll say it's MY fault. But I'd rather burn than hand her over."
 
-Then, unprompted, she says the line that reveals the loop:
+Then, unprompted, she says something she shouldn't know:
 
 > "I've had this conversation before. I've had it so many times."
 
-She doesn't remember the loops. Her grief does.
+She doesn't remember the loops. She doesn't know about the curse. But she's had this conversation 63 times now, and something in her remembers that.
 
 ### Loop 5 — The Cellar
 
@@ -79,51 +81,56 @@ If they say no, she asks:
 
 > "Mama says the dragon comes because I'm hiding. She says if I come out, it stops. Is that true?"
 
-**It is true. But it's not the whole truth.** Lise coming out stops the loop because it fulfills the pact. But it also means a child dies. The players have to decide if that's acceptable.
+**It is true — the curse activates when the tribute is withheld.** If Lise walks the eastern road, the delivery completes, the day progresses, and the curse deactivates. But that also means a child dies. The players have to decide if that's acceptable.
 
 ---
 
 ## Breaking the Curse — Three Paths
 
-### Path 1: Diplomatic (Lise and Ilsa confront the truth together)
+The curse is built into the pact. It deactivates when the tribute is delivered OR when the pact itself is broken. This means there are three ways to stop the loop:
 
-**Requirements:** Found Lise, confronted Ilsa, Ilsa is willing to face the truth.
+### Path 1: Diplomatic (The village refuses the tribute together)
 
-**What happens:** Ilsa goes to the square at 17:30 and speaks to the village. She tells them about the pact. About the children. About what Ashen has done for 200 years. The village is horrified. The mayor tries to stop her. The village turns on him.
+**Requirements:** Found Lise, confronted Ilsa, rallied the village.
 
-Then Ilsa and Lise walk to the east gate. Ilsa holds Lise's hand. They don't go to the dragon — Ilsa faces the village and says: "The loop will not break by giving her up. It will break by refusing to give her up. Together. As a village."
+**What happens:** Ilsa goes to the square at 17:30 and speaks to the village. She tells them about the pact. About the children. About what "apprenticeship" really means. The village is horrified — they didn't know. The mayor tries to stop her, but Dalla steps forward: "I watched them walk a child east 20 years ago. I watched and I did nothing."
 
-The loop breaks because the curse was never about the child. It was about Ilsa being alone in her refusal. When the village stands with her, the pact shatters. The dragon still comes at 18:00 — but it doesn't attack. It circles once, lands in the square, and speaks:
+Then Ilsa holds Lise's hand and says: "They want my daughter. They've wanted our children for 200 years. I'm the first mother to say no. I won't be the last."
+
+The village refuses the tribute collectively. The curse activates when tribute is withheld — but the pact can also be broken by mutual refusal. The village rejects the deal. The seal in the well cracks. The pact is void.
+
+The dragon still comes at 18:00 — but it doesn't attack. It circles once, lands in the square, and speaks:
 
 > "The pact is broken. The tribute is refused. I will not collect what is not given. But remember — the protection ends as well. You are on your own now."
 
-It flies east. It does not return. The sunrise the next morning is the first new sunrise the village has seen in what feels like forever.
+It flies east. It does not return.
 
-### Path 2: Combat (Kill the dragon with prep earned across loops)
+### Path 2: Combat (Kill the dragon, break the curse's power source)
 
 **Requirements:** Found the ranger's journal, learned the weak spot, gave the blacksmith the design in a previous loop, positioned allies.
 
-**What happens:** The players fight the dragon at midday or at sunset with full prep. If they kill it, the pact is broken by force. The loop resets one more time — but this time, there's no dragon. Just dawn. Just the apples. Just Ilsa, confused, asking the players what happened.
+**What happens:** The players fight the dragon at midday or at sunset with full prep. If they kill it, the pact's enforcer is gone. The curse has no power source — the seal in the well goes cold. The loop resets one more time — but this time, there's no dragon. Just dawn. Just the apples. Just Ilsa, confused, asking the players what happened.
 
 The sunrise is real. The village is saved. But the pact's protection also ends. The village is free — and unprotected.
 
-### Path 3: Renegotiation (Talk to the dragon and offer new terms)
+### Path 3: Renegotiation (Amend the pact, the curse updates)
 
 **Requirements:** Found the truth about the pact, approached the dragon at the ridge during the day (loop 4+), willing to negotiate.
 
-**What happens:** The dragon is willing to talk. It's been doing this for 200 years. It's bored. It considers the pact a business arrangement, not a passion. If the players offer something of equivalent value — a magical item, a different kind of tribute, a promise of service — the dragon will consider it.
+**What happens:** The dragon is willing to talk. It's been doing this for 200 years. It's bored. It considers the pact a business arrangement. If the players offer something of equivalent value — a magical item, a different kind of tribute, a promise of service — the dragon will consider it.
 
 Possible new terms (the players decide what to offer):
 - **A different tribute:** The dragon might accept gold, cattle, or magical artifacts instead of a child. It was never specifically about children — that was just what the village offered first.
-- **The blacksmith's service:** Aldric could forge for the dragon. A dragon with a personal smith is a dragon with an ego.
+- **The blacksmith's service:** Aldric could forge for the dragon periodically. A dragon with a personal smith is a dragon with an ego.
 - **The players themselves:** "I will return every twenty years and fight you. If I win, the pact is amended. If you win, you take me." The dragon finds this entertaining.
+- **Something creative:** The players come up with their own offer. The DM should lean toward accepting creative offers.
 
-If terms are agreed, the dragon amends the pact (it can do this — it's a magical contract and both parties can modify it). The loop breaks. The dragon leaves. The village is protected under new terms.
+If terms are agreed, the dragon amends the pact. The curse updates — the delivery condition is replaced with the new terms. The loop breaks. The next dawn is real.
 
 ---
 
 ## What Happens If They Do Nothing
 
-If the players never find Ilsa, never find Lise, and never prepare to fight, the loop repeats forever. The dragon comes at 18:00. Everyone dies. The day resets. This is the default. The loop is designed to be unbreakable without intervention.
+If the players never find Ilsa, never find Lise, and never prepare to fight, the loop repeats forever. The curse keeps re-running the day because the tribute was never delivered and the pact was never broken. This is the default. The curse is designed to be unbreakable without intervention.
 
 The players *must* act to break it. There is no passive solution.

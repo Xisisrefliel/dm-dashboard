@@ -26,7 +26,7 @@ It flies east. It does not return.
 
 **Epilogue:** The village is free. And unprotected. The players can offer to stay, to help the village build real defenses, or to leave — their job is done. The village must reckon with 200 years of complicity. That's not the players' problem to solve. But Ashen will never send another child.
 
-**Why this ending works:** The village was never evil. It was afraid. The courage isn't fighting the dragon — it's admitting the truth out loud. Ilsa's grief trapped the day. The village's honesty breaks it.
+**Why this ending works:** The village didn't know. They thought it was tradition. The courage isn't fighting the dragon — it's facing the truth that they've been feeding children to a monster for 200 years and calling it apprenticeship. Ilsa is the first mother to say no. The curse broke not because of magic, but because the village finally refused to comply.
 
 ---
 
@@ -39,7 +39,7 @@ It flies east. It does not return.
 1. The fight ends. The dragon is dead. Its body crashes in the square or at the mill.
 2. Silence. Then the villagers come out of hiding. They stare.
 3. Aldric steps forward, looks at the body, and says: "My master tried to make weapons against this thing. He went east instead. I always wondered."
-4. The loop resets one more time. Dawn. Birds. Apples. But when 18:00 comes — no dragon. Just sunset.
+4. The loop resets one more time. Dawn. Birds. Apples. But when 18:00 comes — no dragon. Just sunset. The curse is broken — the enforcer is gone, so the delivery condition can never be met, and the seal in the well goes cold.
 5. The next morning is the first new day.
 
 **The party can visit the dragon's lair at the ridge.** Inside:
@@ -48,7 +48,7 @@ It flies east. It does not return.
 - The remains of past tribute children. Personal belongings. A wooden toy horse. A journal with a girl's handwriting, last entry: "Mama, the dragon is not what I expected." A small knife with a boy's initials. This is gutting. It humanizes what the village did.
 - The ranger's bones outside the watchtower (for burial).
 
-**Epilogue:** The pact is broken by force. The village is free. The protection is also gone. If Ashen ever faces a military threat, there's no dragon to save them. But honestly — the dragon was never protecting them out of kindness. It was a business arrangement.
+**Epilogue:** The pact is broken by force. The village is free. The protection is also gone — the 200-year deal that kept Ashen safe from armies is void. If Ashen ever faces a military threat, there's no dragon to save them. But the village is also free from ever sending another child east.
 
 **Why this ending works:** They earned this. Not through a skill check. Through five loops of failing, learning, dying, and trying again. The victory belongs to them. The dragon's hoard is the reward. The children's belongings in the cave are the cost they didn't know about.
 
@@ -72,7 +72,7 @@ It flies east. It does not return.
 - **A fight to renegotiate.** "Every 20 years, a champion of Ashen fights you. If the champion wins, the pact is amended. If you win, you take the tribute." The dragon finds this entertaining. It's never been offered sport before.
 - **Something creative.** The players might come up with something not listed here. If it's of equivalent value and the dragon agrees, it works. The DM should lean toward accepting creative offers — this is the roleplaying reward.
 
-3. If the dragon agrees, it speaks the new terms aloud. The language of the pact glows on the old seal (wherever it is — the well, the town hall, wherever the original contract was made). The pact is amended.
+3. If the dragon agrees, it speaks the new terms aloud. The original pact seal in the well glows and shifts — the contract has been amended. The curse updates: the delivery condition is replaced with the new terms. The loop breaks because the old condition is no longer in effect.
 
 **The loop breaks.** The next dawn is real.
 
@@ -86,8 +86,8 @@ It flies east. It does not return.
 
 Don't aim for any of them. Let the players decide. Your job is to make all three possible by providing the information they need:
 
-- **For ending 1:** Make sure Ilsa is findable, Lise is findable, and the village can be rallied.
-- **For ending 2:** Make sure the combat prep is available if they want to fight.
-- **For ending 3:** Make sure the dragon is approachable and that the pact's terms are discoverable.
+**For ending 1:** Make sure Ilsa is findable, Lise is findable, and the village can be rallied. The key emotional beat is that the villagers didn't know — they thought it was tradition. When they learn the truth, the horror should come from their own complicity.
+- **For ending 2:** Make sure the combat prep is available if they want to fight. The curse breaks because the enforcer is gone.
+- **For ending 3:** Make sure the dragon is approachable and that the pact's terms are discoverable. The curse breaks because the contract is amended.
 
 The best one-shots end with the players choosing, not the DM steering. Give them the tools. Let them build the ending.

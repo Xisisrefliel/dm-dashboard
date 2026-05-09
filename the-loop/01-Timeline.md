@@ -65,7 +65,7 @@ The market carts arrive. Blacksmith's forge starts smoking. The smell of bread f
 ### Key events
 
 - **Market setup.** Three market stalls: produce (run by a halfling named Tess), cloth (run by a tired human named Maren), and trinkets (run by a goblin named Snik, who is technically not supposed to be in town but nobody cares). Snik knows things — he travels. If the players talk to him, he mentions "a big shape in the eastern hills" and "the smell of sulphur on the wind last night." He says this every loop, but only if asked about the east.
-- **Guard shift change.** The night watch goes home. Two new guards take the east and west gates. The east guard is named Pim, a young man who is nervous and new. The west guard is Dalla, a dwarf veteran who has seen things. Dalla knows about the dragon deal — her grandmother was a guard during the last "apprenticeship." She won't volunteer this. But if the players earn her trust (by being competent, or by saving someone in a previous loop), she'll tell them: "Every twenty years, a child leaves this town. They call it apprenticing. I call it something else."
+- **Guard shift change.** The night watch goes home. Two new guards take the east and west gates. The east guard is named Pim, a young man who is nervous and new. The west guard is Dalla, a dwarf veteran who has seen things. Dalla is one of the few villagers who suspects the truth — she watched a child walk east 20 years ago and never come back. She won't volunteer this. But if the players earn her trust (by being competent, or by saving someone in a previous loop), she'll say: "Every twenty years, a child leaves this town. They call it apprenticing. I call it something else."
 
 ---
 
@@ -101,7 +101,7 @@ The market carts arrive. Blacksmith's forge starts smoking. The smell of bread f
 
 ### Key events
 
-- **Children are at lessons with the priestess in the church.** Velda teaches them letters and numbers. If the players observe, they'll notice there are no children above age 7 or 8 in the lesson. The older children are "apprenticed" — the word hangs in the air. If they ask Velda about this, she says: "It's the way of things here. Children go to learn trades in the east." She says it like she's reading from a script. Because she is. She was taught the same script.
+- **Children are at lessons with the priestess in the church.** Velda teaches them letters and numbers. If the players observe, they'll notice there are no children above age 7 or 8 in the lesson. The older children are "apprenticed" — the word hangs in the air. If they ask Velda about this, she says: "It's the way of things here. Children go to learn trades in the east." She says it warmly, like it's a good thing. Because she genuinely believes it is. She doesn't know the truth. Nobody in the village does — they all think it's just tradition.
 - **The market is at its busiest.** Tess, Maren, and Snik are all active. Snik has the best information — he's traveled the eastern road within the last week. He'll describe "bones near the ridge" and "a cave that smells like fire" if asked about the east. He'll also buy information — if the players tell him something from a future loop, he reacts normally, then pauses and says "you talk like you've been here before." He's the only NPC who senses the loop. He doesn't know why. It unnerves him.
 
 ---
@@ -146,7 +146,7 @@ The market carts arrive. Blacksmith's forge starts smoking. The smell of bread f
 
 ### Key events
 
-- **Ilsa visits the graveyard.** She walks from the east gate to the small graveyard behind the church. She stands at one grave for 15 minutes. The grave is unmarked except for a carved flower. If the players investigate, they find out it's the grave of her husband, who died three years ago. The carved flower matches the flowers she sells. She doesn't cry. She just stands there. If the players talk to her, she's calm: "He understood about apprenticeships. He would have given her up. I can't." If they ask who "her" is, she clams up. But she's said more than she meant to.
+- **Ilsa visits the graveyard.** She walks from the east gate to the small graveyard behind the church. She stands at one grave for 15 minutes. The grave is unmarked except for a carved flower. If the players investigate, they find out it's the grave of her husband, who died three years ago. The carved flower matches the flowers she sells. She doesn't cry. She just stands there. If the players talk to her, she's calm: "He wanted her to go. Said it was an honor. Said every family gives a child to the east. I couldn't." If they ask who "her" is, she clams up. But she's said more than she meant to.
 - **Guard patrol returns.** Reese and Pim come back through the east gate. Reese looks troubled. Pim looks terrified. This is the party's last chance to question them before sunset.
 - **Priestess Velda can be convinced to open the church records.** If the players have earned her trust (saved someone, shown genuine concern, or mentioned specific knowledge that proves they're not random troublemakers), she'll let them into the side room after 16:00. The records mention "the arrangement" in archaic language: every 20 years, "a tribute to the eastern guardian" is sent. The last entry was 20 years ago. The next entry is blank — waiting for a name.
 

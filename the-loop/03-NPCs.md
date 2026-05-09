@@ -10,7 +10,7 @@
 
 **Routine:** See Timeline. Key moments: stall at dawn, church at 09:00, east gate at 13:00, graveyard at 16:00, disappears into the church cellar at 17:00.
 
-**Secret:** She's hiding her daughter Lise in the church cellar to prevent her from being "apprenticed" (taken by the dragon). She doesn't know she's causing the time loop. Her grief and love are so intense they've warped the day into repeating until someone fixes this.
+**Secret:** She's hiding her daughter Lise in the church cellar to prevent her from being "apprenticed." She doesn't know about the pact or the curse. She just knows her daughter was supposed to go east and she said no. She's not causing the loop — the pact's curse activated because the tribute was withheld, regardless of who withheld it or why. But she's the first mother in ten generations to refuse.
 
 **What she knows:**
 - The village has a tradition of sending firstborns east. She believes it's wrong.
@@ -20,7 +20,7 @@
 **How she reacts across loops:**
 - **Loop 1:** Friendly, unremarkable. Just the flower woman.
 - **Loop 2-3:** Confused when the players know things. Starts wondering if they're prophets or mad.
-- **Loop 4+:** If confronted with the letters, she breaks. Reveals Lise. Says the line about having the conversation before.
+- **Loop 4+:** If confronted with the letters, she breaks. Reveals Lise. Says the line about having the conversation before — she doesn't remember the loops, but something in her registers the repetition.
 - **If Lise is found without Ilsa's knowledge:** She panics. Becomes protective. Will try to take Lise and run. The players need to earn Ilsa's trust or the encounter goes badly.
 
 ---
@@ -46,11 +46,11 @@
 
 **Routine:** Residence to town hall at 08:00. Open audience 10:00-11:00. Closed council 14:00-15:00. At his residence the rest of the time.
 
-**Secret:** He knows the full truth. The arrangement, the dragon, the children. He's been managing it for 20 years. Ilsa is the first mother to refuse. He's terrified — not of the dragon, but of the village learning the truth.
+**Secret:** He knows the full truth — the pact, the dragon, the children. He's the only villager besides Dalla who knows. He's been managing it for 20 years. Ilsa is the first mother to refuse. He's terrified — not of the dragon, but of the village learning the truth.
 
 **What he knows:**
 - The names of every child sent east in the last 200 years.
-- That the dragon will come regardless of whether Ilsa gives up Lise — the pact demands tribute, and it's overdue.
+- That the dragon will come regardless of whether Ilsa gives up Lise — the pact demands tribute, and the tribute is overdue.
 - That the letters in his office prove everything. He should have burned them. He kept them because he's a bureaucrat who can't bring himself to destroy records.
 
 **How he reacts:**
@@ -81,7 +81,7 @@
 
 **Routine:** Sweeps steps at 06:00, bell at 08:00, lessons 11:00-15:00, available after 16:00 if trust is earned.
 
-**Secret:** The church records mention "the arrangement." She doesn't know the full truth — she knows children go east and doesn't ask why. She's been complicit by not asking. This eats at her.
+**Secret:** The church records mention "the arrangement." She doesn't know the full truth — she knows children go east and doesn't ask why. Like everyone else in the village, she thinks it's just tradition. She's been complicit by not asking. This eats at her.
 
 **What she knows:**
 - The church records in the side room (accessible after 16:00 with her permission).
@@ -96,7 +96,7 @@
 
 **Routine:** West gate all day. Doesn't leave her post.
 
-**Secret:** She watched a child walked east 20 years ago and did nothing. She's never forgiven herself.
+**Secret:** She watched a child walk east 20 years ago and did nothing. She's suspected the truth for a long time — that "apprenticeships" aren't what the village tells itself. She's never forgiven herself.
 
 **What she knows:**
 - The village sends children east. She doesn't call it apprenticeship. She calls it "the toll."
@@ -148,7 +148,7 @@
 
 ## Tess (Produce) and Maren (Cloth) — Market Sellers
 
-Background NPCs. Friendly, chatty, no secrets. Tess will gossip about the mayor ("he's been tense lately"). Maren will mention Ilsa ("poor thing, her husband died, and now she barely speaks to anyone"). Both mention that children "go east for apprenticeships" like it's normal.
+Background NPCs. Friendly, chatty, no secrets. Tess will gossip about the mayor ("he's been tense lately"). Maren will mention Ilsa ("poor thing, her husband died, and now she barely speaks to anyone"). Both mention that children "go east for apprenticeships" like it's normal — because to them, it is normal. They don't know the truth.
 
 ---
 

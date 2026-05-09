@@ -30,13 +30,15 @@ Start warm and cozy. The village should feel real and worth saving. Let the play
 
 ## The Secret
 
-Ashen traded its firstborn children to a dragon 200 years ago for protection during a war. The war ended. The deal didn't. The dragon returns every generation to collect, and the village sends a child away and calls it "apprenticeship." This generation, a mother (Ilsa) refused. She hid her daughter. The dragon came anyway. The loop is her grief, turned into a curse. She doesn't know she's doing it.
+Ashen traded its firstborn children to a dragon 200 years ago for protection during a war. The war ended. The deal didn't. The dragon returns every generation to collect, and the village sends a child away and calls it "apprenticeship." Nobody knows it's a deal. They think it's just tradition — children go east to learn a trade. They don't come back. Nobody asks why.
+
+The pact has a curse built into it: if the tribute is withheld, the day repeats until it's delivered. For 200 years, this was never triggered. Every mother let go. Every child walked the road. This generation, Ilsa refused. She hid her daughter Lise in the church cellar. The tribute wasn't delivered. The curse activated. The day loops. Ilsa has nothing to do with the magic — she's just the first mother in ten generations who said no.
 
 ## Three Valid Endings
 
-1. **Diplomatic:** Help Ilsa and her daughter break the curse. The dragon doesn't come. The day doesn't reset.
-2. **Combat:** Kill the dragon with prep earned across loops. The threat is gone. The day doesn't reset.
-3. **Renegotiation:** Confront Ilsa, learn the truth, then talk to the dragon. It's intelligent — it made a contract. It might accept different terms.
+1. **Diplomatic:** Help Ilsa and the village refuse the tribute. The curse breaks when the village collectively acknowledges the truth and refuses to send another child. The dragon still comes — but finds no willing delivery.
+2. **Combat:** Kill the dragon with prep earned across loops. The enforcer is gone. The curse has no power source. The day doesn't reset.
+3. **Renegotiation:** Talk to the dragon. It's intelligent — it made a contract. It might accept different terms. The curse updates when the pact is amended.
 
 ## File Reference
 
@@ -44,9 +46,10 @@ Ashen traded its firstborn children to a dragon 200 years ago for protection dur
 - `02-Locations.md` — Every place, what's there, what's hidden
 - `03-NPCs.md` — Every NPC, their routine, their secrets
 - `04-The-Dragon.md` — Stats, behavior, weak spot, what players learn per loop
-- `05-The-Secret.md` — Ilsa, the deal, the daughter, seeding and reveal
+- `05-The-Secret.md` — Ilsa, the deal, the daughter, the curse, seeding and reveal
 - `06-Combat-Encounter.md` — The dragon fight, prep options, tactics
 - `07-Endings.md` — Three endings, triggers, and epilogues
+- `08-Solution-Routes.md` — Step-by-step paths for each ending
 
 ## Loops at a Glance
 
