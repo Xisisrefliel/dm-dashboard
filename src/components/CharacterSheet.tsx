@@ -105,6 +105,8 @@ export default function CharacterSheet({ char, update, onBack, editId, assignedS
   const [selectedSpell, setSelectedSpell] = useState<SpellData | null>(null);
   const [invView, setInvView] = useState<string>("list");
   const [invSearch, setInvSearch] = useState<string>("");
+  const [itemLookupSearch, setItemLookupSearch] = useState<string>("");
+  const [selectedLookupItem, setSelectedLookupItem] = useState<InventoryItem | null>(null);
   const [customItem, setCustomItem] = useState<CustomItemState>({ name: "", icon: "inventory_2", weight: "", desc: "" });
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
@@ -815,6 +817,20 @@ export default function CharacterSheet({ char, update, onBack, editId, assignedS
           <Icon name="backpack" size={20} /> Inventory
         </Ripple>
         <Ripple
+          onClick={() => { haptic.trigger("medium"); setOpenPanel(openPanel === "itemlookup" ? null : "itemlookup"); setItemLookupSearch(""); setSelectedLookupItem(null); }}
+          style={{
+            display: "flex", alignItems: "center", gap: 8,
+            padding: isMobile ? "12px 16px" : "12px 24px", borderRadius: 24,
+            background: openPanel === "itemlookup" ? "var(--dm-primary)" : "var(--dm-surface)",
+            color: openPanel === "itemlookup" ? "var(--dm-on-primary)" : "var(--dm-text)",
+            border: "1px solid var(--dm-outline-variant)",
+            fontWeight: 600, fontSize: 14, pointerEvents: "auto",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+          }}
+        >
+          <Icon name="search" size={20} /> Item Lookup
+        </Ripple>
+        <Ripple
           onClick={() => { haptic.trigger("medium"); setOpenPanel(openPanel === "spellbook" ? null : "spellbook"); setSpellFilter("my"); setSpellSearch(""); setSelectedSpell(null); }}
           style={{
             display: "flex", alignItems: "center", gap: 8,
@@ -857,11 +873,11 @@ export default function CharacterSheet({ char, update, onBack, editId, assignedS
               borderBottom: "1px solid var(--dm-outline-variant)", flexShrink: 0,
             }}>
               <Icon
-                name={openPanel === "inventory" ? "backpack" : "auto_stories"}
+                name={openPanel === "inventory" ? "backpack" : openPanel === "itemlookup" ? "search" : "auto_stories"}
                 size={24} style={{ color: "var(--dm-primary)" }}
               />
               <span style={{ fontSize: 18, fontWeight: 700, flex: 1 }}>
-                {openPanel === "inventory" ? "Inventory" : "Spellbook"}
+                {openPanel === "inventory" ? "Inventory" : openPanel === "itemlookup" ? "Item Lookup" : "Spellbook"}
               </span>
               <Ripple onClick={() => setOpenPanel(null)} style={{
                 width: 36, height: 36, borderRadius: 18,
@@ -911,7 +927,13 @@ export default function CharacterSheet({ char, update, onBack, editId, assignedS
                 if (invView === "add") {
                   const q = invSearch.toLowerCase();
                   const filtered = SRD_ITEMS.filter((it) =>
-                    it.name.toLowerCase().includes(q) || it.desc.toLowerCase().includes(q)
+                    [
+                      it.name,
+                      it.desc,
+                      it.weight,
+                      it.damage,
+                      it.properties,
+                    ].some((value) => value?.toLowerCase().includes(q))
                   );
                   return (
                     <div>
@@ -925,10 +947,13 @@ export default function CharacterSheet({ char, update, onBack, editId, assignedS
                       <input
                         value={invSearch}
                         onChange={(e) => setInvSearch(e.target.value)}
-                        placeholder="Search items..."
+                        placeholder="Search official SRD items..."
                         className="m3input"
                         style={{ width: "100%", fontSize: 14, marginBottom: 12, boxSizing: "border-box" }}
                       />
+                      <div style={{ fontSize: 12, color: "var(--dm-text-muted)", marginBottom: 12, lineHeight: 1.4 }}>
+                        Official 5e SRD equipment. Search by item name, damage, armor, property, pack, tool, mount, or vehicle.
+                      </div>
                       <Ripple onClick={() => setInvView("custom")} style={{
                         display: "flex", alignItems: "center", gap: 10, padding: "12px 14px",
                         background: "var(--dm-surface-bright)", borderRadius: 12,
@@ -947,7 +972,10 @@ export default function CharacterSheet({ char, update, onBack, editId, assignedS
                             <Icon name={item.icon} size={20} style={{ color: "var(--dm-primary)", flexShrink: 0 }} />
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: 14, fontWeight: 500 }}>{item.name}</div>
-                              <div style={{ fontSize: 11, color: "var(--dm-text-muted)" }}>{item.weight}{item.weight ? " · " : ""}{item.desc}</div>
+                              <div style={{ fontSize: 11, color: "var(--dm-text-secondary)", marginTop: 2 }}>
+                                {[item.damage, item.properties, item.weight].filter(Boolean).join(" · ")}
+                              </div>
+                              <div style={{ fontSize: 11, color: "var(--dm-text-muted)", marginTop: 2 }}>{item.desc}</div>
                             </div>
                             <Icon name="add" size={18} style={{ color: "var(--dm-primary)", flexShrink: 0 }} />
                           </Ripple>
@@ -1055,6 +1083,112 @@ export default function CharacterSheet({ char, update, onBack, editId, assignedS
                               <Icon name="lock" size={16} style={{ color: "var(--dm-text-muted)", flexShrink: 0, opacity: 0.5 }} />
                             )}
                           </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {openPanel === "itemlookup" && (() => {
+                if (selectedLookupItem) {
+                  const item = selectedLookupItem;
+                  return (
+                    <div>
+                      <Ripple onClick={() => setSelectedLookupItem(null)} style={{
+                        display: "inline-flex", alignItems: "center", gap: 6,
+                        padding: "6px 14px", borderRadius: 16, fontSize: 13,
+                        color: "var(--dm-text-muted)", marginBottom: 16,
+                      }}>
+                        <Icon name="arrow_back" size={16} /> Back to items
+                      </Ripple>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                        <div style={{
+                          width: 48, height: 48, borderRadius: 14,
+                          background: "var(--dm-surface-bright)", display: "flex",
+                          alignItems: "center", justifyContent: "center",
+                        }}>
+                          <Icon name={item.icon || "inventory_2"} size={28} style={{ color: "var(--dm-primary)" }} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 22, fontWeight: 700 }}>{item.name}</div>
+                          <div style={{ fontSize: 13, color: "var(--dm-text-muted)" }}>
+                            {item.properties || "Official 5e SRD equipment"}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{
+                        display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "10px 20px",
+                        background: "var(--dm-surface-bright)", borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 16,
+                        fontSize: 13,
+                      }}>
+                        {item.damage && <div><span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Damage: </span>{item.damage}</div>}
+                        {item.weight && <div><span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Weight: </span>{item.weight}</div>}
+                        {item.properties && (
+                          <div style={{ gridColumn: "1 / -1" }}>
+                            <span style={{ color: "var(--dm-primary)", fontWeight: 600 }}>Rules: </span>{item.properties}
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ fontSize: 14, lineHeight: 1.7, color: "var(--dm-text-secondary)" }}>
+                        {item.desc}
+                      </div>
+                    </div>
+                  );
+                }
+
+                const q = itemLookupSearch.toLowerCase();
+                const filtered = SRD_ITEMS.filter((it) =>
+                  [
+                    it.name,
+                    it.desc,
+                    it.weight,
+                    it.damage,
+                    it.properties,
+                  ].some((value) => value?.toLowerCase().includes(q))
+                );
+
+                return (
+                  <div>
+                    <input
+                      value={itemLookupSearch}
+                      onChange={(e) => setItemLookupSearch(e.target.value)}
+                      placeholder="Search official SRD items..."
+                      className="m3input"
+                      style={{ width: "100%", fontSize: 14, marginBottom: 12, boxSizing: "border-box" }}
+                    />
+                    <div style={{ fontSize: 12, color: "var(--dm-text-muted)", marginBottom: 12, lineHeight: 1.4 }}>
+                      Read-only 5e SRD item rules for weapons, armor, tools, packs, mounts, vehicles, and adventuring gear.
+                    </div>
+
+                    {filtered.length === 0 ? (
+                      <div style={{ textAlign: "center", padding: 40, color: "var(--dm-text-muted)" }}>
+                        <Icon name="search_off" size={48} style={{ opacity: 0.4, marginBottom: 12 }} />
+                        <div style={{ fontSize: 15 }}>No items found</div>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {filtered.map((item) => (
+                          <Ripple key={item.id} onClick={() => setSelectedLookupItem(item)} style={{
+                            display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px",
+                            background: "var(--dm-surface-bright)", borderRadius: 12,
+                            border: "1px solid var(--dm-outline-variant)",
+                          }}>
+                            <Icon name={item.icon || "inventory_2"} size={20} style={{ color: "var(--dm-primary)", flexShrink: 0, marginTop: 2 }} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 14, fontWeight: 600 }}>{item.name}</div>
+                              <div style={{ fontSize: 11, color: "var(--dm-text-secondary)", marginTop: 2 }}>
+                                {[item.damage, item.properties, item.weight].filter(Boolean).join(" · ")}
+                              </div>
+                              <div style={{ fontSize: 12, color: "var(--dm-text-muted)", marginTop: 4, lineHeight: 1.4 }}>
+                                {item.desc.length > 140 ? item.desc.slice(0, 140) + "\u2026" : item.desc}
+                              </div>
+                            </div>
+                            <Icon name="chevron_right" size={18} style={{ color: "var(--dm-text-muted)", flexShrink: 0, marginTop: 2 }} />
+                          </Ripple>
                         ))}
                       </div>
                     )}
