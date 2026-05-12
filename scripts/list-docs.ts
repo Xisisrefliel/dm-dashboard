@@ -1,0 +1,10 @@
+import { db } from '../src/db';
+import { campaigns, docs } from '../src/db/schema';
+import { eq, asc } from 'drizzle-orm';
+const slug = process.argv[2] || 'alternative-shot';
+const [c] = await db.select().from(campaigns).where(eq(campaigns.slug, slug));
+if (!c) throw new Error('campaign not found');
+const rows = await db.select({id:docs.id,title:docs.title,category:docs.categoryKey,content:docs.content}).from(docs).where(eq(docs.campaignId,c.id)).orderBy(asc(docs.createdAt));
+console.log(c);
+for (const d of rows) console.log('\n---', d.id, d.category, d.title, 'len', d.content?.length, '\n', (d.content||'').slice(0,400));
+process.exit(0);

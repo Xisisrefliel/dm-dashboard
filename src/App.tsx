@@ -55,6 +55,8 @@ export default function App() {
   });
   const [editCharacterId, setEditCharacterId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [leavingHome, setLeavingHome] = useState<boolean>(false);
+  const [enteringCampaign, setEnteringCampaign] = useState<boolean>(false);
 
   const fetchCampaignBySlug = async (slug: string): Promise<AppCampaign | null> => {
     const res = await fetch(`/api/campaigns/${encodeURIComponent(slug)}`);
@@ -139,17 +141,31 @@ export default function App() {
     });
     if (!res.ok) return;
     const campaign = await res.json();
-    setActiveCampaign(campaign);
     window.history.pushState(null, "", `/${campaign.slug}`);
+    setLeavingHome(true);
+    setEnteringCampaign(true);
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    setActiveCampaign(campaign);
+    setLeavingHome(false);
   };
 
   const handleSelect = async (id: string, slug: string) => {
-    // Navigate immediately, then load data
     window.history.pushState(null, "", `/${slug}`);
-    const res = await fetch(`/api/campaigns/${id}`);
-    if (!res.ok) return;
-    const campaign = await res.json();
+
+    const campaign = await fetch(`/api/campaigns/${id}`).then((r) => (r.ok ? r.json() : null));
+
+    if (!campaign) {
+      window.history.replaceState(null, "", "/");
+      return;
+    }
+
+    // Keep the home screen visible while data loads. Only fade once the
+    // campaign is ready, so navigation never shows an empty color frame.
+    setLeavingHome(true);
+    setEnteringCampaign(true);
+    await new Promise((resolve) => setTimeout(resolve, 80));
     setActiveCampaign(campaign);
+    setLeavingHome(false);
   };
 
   const handleDelete = async (id: string) => {
@@ -172,6 +188,7 @@ export default function App() {
   };
 
   const handleBack = () => {
+    setEnteringCampaign(false);
     setActiveCampaign(null);
     window.history.pushState(null, "", "/");
     fetch("/api/campaigns")
@@ -250,27 +267,31 @@ export default function App() {
 
   if (activeCampaign) {
     return (
-      <DMDashboard
+      <div
         key={activeCampaign.id}
-        campaign={activeCampaign}
-        onBack={handleBack}
-      />
+        className={enteringCampaign ? "page-enter-forward" : undefined}
+        onAnimationEnd={() => setEnteringCampaign(false)}
+      >
+        <DMDashboard campaign={activeCampaign} onBack={handleBack} />
+      </div>
     );
   }
 
   return (
-    <CampaignHome
-      campaigns={campaigns}
-      onSelect={handleSelect}
-      onCreate={handleCreate}
-      onDelete={handleDelete}
-      onRename={handleRename}
-      user={user}
-      onLogout={handleLogout}
-      onCharacterCreator={() => {
-        setPage("characters");
-        window.history.pushState(null, "", "/characters");
-      }}
-    />
+    <div className={leavingHome ? "page-leave-forward" : "page-home"}>
+      <CampaignHome
+        campaigns={campaigns}
+        onSelect={handleSelect}
+        onCreate={handleCreate}
+        onDelete={handleDelete}
+        onRename={handleRename}
+        user={user}
+        onLogout={handleLogout}
+        onCharacterCreator={() => {
+          setPage("characters");
+          window.history.pushState(null, "", "/characters");
+        }}
+      />
+    </div>
   );
 }

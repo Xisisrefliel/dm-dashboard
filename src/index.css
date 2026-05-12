@@ -211,6 +211,31 @@ body {
     }
 }
 
+/* Home → campaign navigation: simple crossfade, no movement */
+@keyframes pageEnterForward {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes pageLeaveForward {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+.page-home,
+.page-enter-forward,
+.page-leave-forward {
+    min-height: 100vh;
+    background: #141518;
+}
+.page-enter-forward {
+    animation: pageEnterForward 180ms var(--ease-emphasized) both;
+    will-change: opacity;
+}
+.page-leave-forward {
+    animation: pageLeaveForward 120ms var(--ease-emphasized) both;
+    pointer-events: none;
+    will-change: opacity;
+}
+
 @keyframes m3slideIn {
     from {
         transform: translateX(-16px);
